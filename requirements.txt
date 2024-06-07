@@ -1,3 +1,4 @@
 flask
 pillow==9.3.0
 bleach
+flask-socketio
