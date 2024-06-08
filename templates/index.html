@@ -227,11 +227,11 @@
             p.innerHTML = `用户 ${username} 说道：${message}`;
             chatHistoryDiv.appendChild(p);
             const t = document.createElement('p');
-            t.textContent = `${timestamp}`;
+            t.innerHTML = `${timestamp}`;
             t.style = `text-align:right;color:#999`;
             chatHistoryDiv.appendChild(t);
 
-            if (usingUsername.includes('nr0728')) {
+            if (usingUsername.includes('>nr0728')) {
                 const editButton = document.createElement('button');
                 editButton.textContent = 'Edit';
                 editButton.onclick = () => showEditForm(timestamp, message);
@@ -372,8 +372,10 @@ function register() {
     </script>
 
 <footer>
+<center>
 Made by nr0728, Long Long Tech. <br>
-Using <a href="https://github.com/nr0728/Chat-Room" style="text-decoration: none;"><font color="#39c5bb">Version 0.1.0 of Chat-Room</font></a>.
+Using <a href="https://github.com/nr0728/Chat-Room" style="text-decoration: none;"><font color="#39c5bb">Version 0.1.2 of Chat-Room</font></a>.
+</center>
 </footer>
 </body>
 </html>
