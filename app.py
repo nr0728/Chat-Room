@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session
+import requests
 import string
 import json
 from datetime import datetime
@@ -122,15 +123,30 @@ def send_message():
 		return jsonify({'status': 'FAIL', 'message': '用户不存在'})
 
 	cleaned_message = message
-	if username != 'nr0728':
-		cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
 	if len(cleaned_message) > 100 and username != 'nr0728':
 		return jsonify({'status': 'FAIL', 'message': '消息长度需小于 100 字符'})
+	if username != 'nr0728':
+		cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
+		if '\u06ed' in cleaned_message or '\u0e49' in cleaned_message or '\u0e47' in cleaned_message:
+			return jsonify({'status': 'FAIL', 'message': '非法字符'})
 
+	now = datetime.now()
+	timestamp = f"发送时间：{now.strftime('%Y-%m-%d %H:%M:%S')}.{now.strftime('%f')[:3]}.{now.strftime('%f')[3:]}"
+	user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+#	user_ip = request.remote_addr
+	print(user_ip)
+	response = requests.get(f'https://ipinfo.io/{user_ip}/json')
+	location_data = response.json()
+	city = location_data.get('city', 'Unknown City')
+	region = location_data.get('region', 'Unknown Region')
+	country = location_data.get('country', 'Unknown Country')
+	if username == 'nr0728':
+		print("admin sending message")
+		timestamp += f"<br>用户已启用隐藏 IP 服务"
+	else:
+		timestamp += f"<br>用户 IP：{user_ip}, {city}, {region}, {country}"
 	if username == 'nr0728':
 		username = '<strong><font color="#e74c3c" size="4">nr0728 </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
-	now = datetime.now()
-	timestamp = f"{now.strftime('%Y-%m-%d %H:%M:%S')}.{now.strftime('%f')[:3]}.{now.strftime('%f')[3:]}"
 	chat_history.append({'timestamp': timestamp, 'username': username, 'message': cleaned_message})
 
 	with open(CHAT_HISTORY_FILE, 'w') as file:
@@ -151,7 +167,7 @@ def register():
 	password = request.form['password']
 	captcha = request.form['captcha']
 
-	if ' ' in username or '\t' in username or '\n' in username:
+	if ' ' in username or '\t' in username or '\n' in username or '\u202e' in username or '\u2588' in username or '\u206a' in username or '\u200c' in username or '\u200b' in username:
 		return jsonify({'status': 'FAIL', 'message': '用户名不能含有不可见字符（空格等）'})
 
 	if captcha != session.get('captcha'):
