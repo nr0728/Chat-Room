@@ -1,3 +1,7 @@
+# 说明：有管理员控制面板，更改用户权限，封禁用户等功能的版本因为某些原因在一段时间后才会上传到本仓库
+
+本项目已在 Linux, Windows 和 macOS 上测试，均无大问题，但是 Windows 上的验证码生成似乎有点问题。
+
 <div align="center">
   <h1>Chat-Room</h1>
   <p>Made by nr0728</p>
