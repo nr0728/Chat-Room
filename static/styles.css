@@ -1,10 +1,53 @@
+button.edit, button.edit-username, button.delete, button.edit-identifier {
+    background-color: #8CC269;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin-left: 5px;
+    font-size: 14px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+}
+
+button.edit:hover, button.edit-username:hover, button.delete:hover, button.edit-identifier:hover {
+    background-color: #35b6ad;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+}
+
+
+#panel-container {
+    width: 1000px;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.panel-message {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.panel-message p {
+    margin: 0;
+    flex: 1;
+}
+
 footer {
-background-color: #333;
-            color: #fff;
-            padding: 20px 0;
-            position: absolute;
-            bottom: 0;
-            width: 100%;
+    background-color: #ddd;
+    color: #fff;
+    padding: 20px 0;
+    position: relative;
+    bottom: 0;
+    width: 100%;
 }
 
 body {
@@ -19,7 +62,7 @@ body {
 }
 
 h1 {
-    color: #39c5bb;
+    color: #8CC269;
     width: 100%;
     text-align: center;
     margin: 0;
@@ -37,7 +80,7 @@ h1 {
 #nav-buttons button {
     margin-left: 10px;
     padding: 10px 20px;
-    background-color: #39c5bb;
+    background-color: #8CC269;
     color: white;
     border: none;
     cursor: pointer;
@@ -57,8 +100,7 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 80%;
-    max-width: 600px;
+    width: 1000px;
     margin-top: 20px;
 }
 
@@ -66,8 +108,8 @@ h1 {
     border: 1px solid #ddd;
     padding: 10px;
     margin-bottom: 20px;
-    max-height: 300px;
-    width: 100%;
+    max-height: 600px;
+    width: 800px;
     overflow-y: auto;
     background-color: #fff;
 }
@@ -77,6 +119,12 @@ h1 {
 }
 
 #input-container {
+    display: flex;
+    width: 100%;
+	align-items: center;
+}
+
+#input-container-code {
     display: flex;
     width: 100%;
 }
@@ -89,8 +137,16 @@ input[type="text"] {
     border-radius: 4px 0 0 4px;
 }
 
+textarea {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+}
+
 button {
-    background-color: #39c5bb;
+    background-color: #8CC269;
     color: white;
     border: none;
     cursor: pointer;
@@ -176,4 +232,3 @@ input[type="password"], input[type="text"] {
     border-radius: 4px;
     box-sizing: border-box;
 }
-
