@@ -23,6 +23,9 @@ chat_history = []
 USER_DATA_FILE = 'password.json'
 users = {}
 
+# 封禁的 IP 列表
+BANNED_IP = ['211.158.25.248', '122.224.219.246']
+
 # 允许的 HTML 标签和属性白名单
 allowed_tags = ['p', 'br']
 allowed_attrs = {'*': ['style'], 'p': ['style']}
@@ -96,6 +99,7 @@ def generate_captcha_image(size=(120, 60), characterNumber=5, bgcolor=getColor2(
 	buf.seek(0)
 	return (buf, text)
 
+
 @app.route('/')
 def index():
 	return render_template('index.html')
@@ -132,14 +136,26 @@ def send_message():
 
 	now = datetime.now()
 	timestamp = f"发送时间：{now.strftime('%Y-%m-%d %H:%M:%S')}.{now.strftime('%f')[:3]}.{now.strftime('%f')[3:]}"
+	check_timestamp = datetime.now().timestamp()
+	if not 'time' in session:
+		session['time'] = 0
+	if username != 'nr0728' and check_timestamp - session['time'] < 5:
+		return jsonify({'status': 'FAIL', 'message': '发送消息的频率太快，请稍后再试'})
+	session['time'] = check_timestamp
 	user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 #	user_ip = request.remote_addr
 	print(user_ip)
+	try:
+		user_ip = user_ip.split(',')[0].strip()
+	except:
+		pass
+	if user_ip in BANNED_IP:
+		return jsonify({'status': 'FAIL', 'message': 'IP 已封禁，请联系 monkey@llong.tech'})
 	response = requests.get(f'https://ipinfo.io/{user_ip}/json')
 	location_data = response.json()
 	city = location_data.get('city', 'Unknown City')
 	region = location_data.get('region', 'Unknown Region')
-	country = location_data.get('country', 'Unknown Country')
+	country = location_data.get('country', 'Unknown Country').replace('HK', 'CN').replace('TW', 'CN').replace('MO', 'CN')
 	if username == 'nr0728':
 		print("admin sending message")
 		timestamp += f"<br>用户已启用隐藏 IP 服务"
@@ -156,6 +172,69 @@ def send_message():
 	socketio.emit('new_message', {'timestamp': timestamp, 'username': username, 'message': cleaned_message})
 
 	return jsonify({'status': 'OK'})
+
+
+@app.route('/send_code', methods=['POST'])
+def send_code():
+	if 'username' not in session:
+		return jsonify({'status': 'FAIL', 'message': '需要登录'})
+
+	username = session['username']
+	message = request.form['message']
+
+	if username not in users:
+		return jsonify({'status': 'FAIL', 'message': '用户不存在'})
+
+	cleaned_message = message
+	if len(cleaned_message) > 10240 and username != 'nr0728':
+		return jsonify({'status': 'FAIL', 'message': '代码长度需小于 10KB'})
+	if username != 'nr0728':
+		cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
+		if '\u06ed' in cleaned_message or '\u0e49' in cleaned_message or '\u0e47' in cleaned_message:
+			return jsonify({'status': 'FAIL', 'message': '非法字符'})
+
+	now = datetime.now()
+	timestamp = f"发送时间：{now.strftime('%Y-%m-%d %H:%M:%S')}.{now.strftime('%f')[:3]}.{now.strftime('%f')[3:]}"
+	check_timestamp = datetime.now().timestamp()
+	if not 'time' in session:
+		session['time'] = 0
+	if username != 'nr0728' and check_timestamp - session['time'] < 5:
+		return jsonify({'status': 'FAIL', 'message': '发送消息的频率太快，请稍后再试'})
+	session['time'] = check_timestamp
+	user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+#	user_ip = request.remote_addr
+	print(user_ip)
+	try:
+		user_ip = user_ip.split(',')[0].strip()
+	except:
+		pass
+	if user_ip in BANNED_IP:
+		return jsonify({'status': 'FAIL', 'message': 'IP 已封禁，请联系 monkey@llong.tech'})
+	response = requests.get(f'https://ipinfo.io/{user_ip}/json')
+	location_data = response.json()
+	city = location_data.get('city', 'Unknown City')
+	region = location_data.get('region', 'Unknown Region')
+	country = location_data.get('country', 'Unknown Country')
+	if username == 'nr0728':
+		print("admin sending message")
+		timestamp += f"<br>用户已启用隐藏 IP 服务"
+	else:
+		timestamp += f"<br>用户 IP：{user_ip}, {city}, {region}, {country}"
+	if username == 'nr0728':
+		username = '<strong><font color="#e74c3c" size="4">nr0728 </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
+	cleaned_message = cleaned_message.replace('<', '&lt;')
+	cleaned_message = cleaned_message.replace('>', '&gt;')
+	cleaned_message = '用户发送了<font color="red">代码</font>：<br><pre class="language-cpp"><code class="language-cpp">' + cleaned_message + '</code></pre>'
+	chat_history.append({'timestamp': timestamp, 'username': username, 'message': cleaned_message})
+
+	with open(CHAT_HISTORY_FILE, 'w') as file:
+		json.dump(chat_history, file)
+
+	# 使用SocketIO广播消息
+	socketio.emit('new_message', {'timestamp': timestamp, 'username': username, 'message': cleaned_message})
+
+	return jsonify({'status': 'OK'})
+
 
 @app.route('/get_chat_history')
 def get_chat_history():
@@ -186,6 +265,7 @@ def register():
 	hashed_password = hashlib.sha256(password.encode()).hexdigest()
 	users[username] = hashed_password
 	save_users()
+	session['captcha'] = str(random.randint(1, 1145141919810))
 	return jsonify({'status': 'OK'})
 
 @app.route('/login', methods=['POST'])
@@ -202,8 +282,10 @@ def login():
 
 	if username in users and users[username] == hashed_password:
 		session['username'] = username
+		session['captcha'] = str(random.randint(1, 1145141919810))
 		return jsonify({'status': 'OK'})
 	else:
+		session['captcha'] = str(random.randint(1, 1145141919810))
 		return jsonify({'status': 'FAIL', 'message': '用户名或密码错误'})
 
 @app.route('/logout', methods=['POST'])
@@ -220,32 +302,85 @@ def captcha():
 	session['captcha'] = res1[1]
 	return captcha_image
 
+@app.route('/panel')
+def panel():
+    if 'username' not in session or session['username'] != 'nr0728':
+        return "Access denied", 403
+    return render_template('panel.html', chat_history=chat_history)
+
+@app.route('/delete_message', methods=['POST'])
+def delete_message():
+    if 'username' not in session or session['username'] != 'nr0728':
+        return jsonify({'status': 'FAIL', 'message': '你没有权限删除此消息'})
+    
+    timestamp = request.form['timestamp']
+    global chat_history
+    chat_history = [msg for msg in chat_history if msg['timestamp'] != timestamp]
+
+    # 保存聊天记录到 JSON 文件
+    with open(CHAT_HISTORY_FILE, 'w') as file:
+        json.dump(chat_history, file)
+
+    return jsonify({'status': 'OK'})
+
 @app.route('/edit_message', methods=['POST'])
 def edit_message():
-	if 'username' not in session:
-		return jsonify({'status': 'FAIL', 'message': '需要登录'})
+    if 'username' not in session or session['username'] != 'nr0728':
+        return jsonify({'status': 'FAIL', 'message': '你没有权限编辑此消息'})
 
-	username = session['username']
-	if username != 'nr0728':
-		return jsonify({'status': 'FAIL', 'message': '你没有权限编辑此消息'})
+    timestamp = request.form['timestamp']
+    new_message = request.form['new_message']
 
-	timestamp = request.form['timestamp']
-	new_message = request.form['new_message']
+    for message in chat_history:
+        if message['timestamp'] == timestamp:
+            message['message'] = new_message
+            break
 
-	for message in chat_history:
-		if message['timestamp'] == timestamp:
-			message['message'] = new_message
-			break
+    # 保存聊天记录到 JSON 文件
+    with open(CHAT_HISTORY_FILE, 'w') as file:
+        json.dump(chat_history, file)
 
-	# 保存聊天记录到 JSON 文件
-	with open(CHAT_HISTORY_FILE, 'w') as file:
-		json.dump(chat_history, file)
+    return jsonify({'status': 'OK'})
 
-	return jsonify({'status': 'OK'})
+@app.route('/edit_username', methods=['POST'])
+def edit_username():
+    if 'username' not in session or session['username'] != 'nr0728':
+        return jsonify({'status': 'FAIL', 'message': '你没有权限修改用户名'})
 
+    timestamp = request.form['timestamp']
+    new_username = request.form['new_username']
+
+    for message in chat_history:
+        if message['timestamp'] == timestamp:
+            message['username'] = new_username
+            break
+
+    # 保存聊天记录到 JSON 文件
+    with open(CHAT_HISTORY_FILE, 'w') as file:
+        json.dump(chat_history, file)
+
+    return jsonify({'status': 'OK'})
+
+@app.route('/edit_timestamp', methods=['POST'])
+def edit_timestamp():
+    if 'username' not in session or session['username'] != 'nr0728':
+        return jsonify({'status': 'FAIL', 'message': '你没有权限修改标识符'})
+
+    old_timestamp = request.form['old_timestamp']
+    new_timestamp = request.form['new_timestamp']
+
+    for message in chat_history:
+        if message['timestamp'] == old_timestamp:
+            message['timestamp'] = new_timestamp
+            break
+
+    # 保存聊天记录到 JSON 文件
+    with open(CHAT_HISTORY_FILE, 'w') as file:
+        json.dump(chat_history, file)
+
+    return jsonify({'status': 'OK'})
 
 if __name__ == '__main__':
 	load_history()
 	load_users()
 	socketio.run(app, host='0.0.0.0', port=1145)
-
