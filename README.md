@@ -37,4 +37,4 @@ python app.py
 
 ## 演示
 
-<https://chat.llong.tech>。
+<https://chat.llong.tech>。(currently unavailable)
