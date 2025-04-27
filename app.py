@@ -26,6 +26,9 @@ users = {}
 # 封禁的 IP 列表
 BANNED_IP = ['211.158.25.248', '122.224.219.246']
 
+# 管理员列表
+admin_list = ['nr0728']
+
 # 允许的 HTML 标签和属性白名单
 allowed_tags = ['p', 'br']
 allowed_attrs = {'*': ['style'], 'p': ['style']}
@@ -111,8 +114,8 @@ def user_status():
 	print("fetching user status: get")
 	if not username:
 		return jsonify({'status': 'FAIL', 'message': 'login required'})
-	if username == 'nr0728':
-		username = '<strong><font color="#e74c3c" size="4">nr0728 </font><button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
+	if username in admin_list:
+		username = '<strong><font color="#e74c3c" size="4">'+username+' </font><button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
 	return jsonify({'status': 'OK', 'message': username})
 
 @app.route('/send_message', methods=['POST'])
@@ -127,9 +130,9 @@ def send_message():
 		return jsonify({'status': 'FAIL', 'message': '用户不存在'})
 
 	cleaned_message = message
-	if len(cleaned_message) > 100 and username != 'nr0728':
+	if len(cleaned_message) > 100 and username not in admin_list:
 		return jsonify({'status': 'FAIL', 'message': '消息长度需小于 100 字符'})
-	if username != 'nr0728':
+	if username not in admin_list:
 		cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
 		if '\u06ed' in cleaned_message or '\u0e49' in cleaned_message or '\u0e47' in cleaned_message:
 			return jsonify({'status': 'FAIL', 'message': '非法字符'})
@@ -139,7 +142,7 @@ def send_message():
 	check_timestamp = datetime.now().timestamp()
 	if not 'time' in session:
 		session['time'] = 0
-	if username != 'nr0728' and check_timestamp - session['time'] < 5:
+	if username not in admin_list and check_timestamp - session['time'] < 5:
 		return jsonify({'status': 'FAIL', 'message': '发送消息的频率太快，请稍后再试'})
 	session['time'] = check_timestamp
 	user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -156,13 +159,13 @@ def send_message():
 	city = location_data.get('city', 'Unknown City')
 	region = location_data.get('region', 'Unknown Region')
 	country = location_data.get('country', 'Unknown Country').replace('HK', 'CN').replace('TW', 'CN').replace('MO', 'CN')
-	if username == 'nr0728':
+	if username in admin_list:
 		print("admin sending message")
 		timestamp += f"<br>用户已启用隐藏 IP 服务"
 	else:
 		timestamp += f"<br>用户 IP：{user_ip}, {city}, {region}, {country}"
-	if username == 'nr0728':
-		username = '<strong><font color="#e74c3c" size="4">nr0728 </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
+	if username in admin_list:
+		username = '<strong><font color="#e74c3c" size="4">'+username+' </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
 	chat_history.append({'timestamp': timestamp, 'username': username, 'message': cleaned_message})
 
 	with open(CHAT_HISTORY_FILE, 'w') as file:
@@ -186,9 +189,9 @@ def send_code():
 		return jsonify({'status': 'FAIL', 'message': '用户不存在'})
 
 	cleaned_message = message
-	if len(cleaned_message) > 10240 and username != 'nr0728':
+	if len(cleaned_message) > 10240 and username not in admin_list:
 		return jsonify({'status': 'FAIL', 'message': '代码长度需小于 10KB'})
-	if username != 'nr0728':
+	if username not in admin_list:
 		cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
 		if '\u06ed' in cleaned_message or '\u0e49' in cleaned_message or '\u0e47' in cleaned_message:
 			return jsonify({'status': 'FAIL', 'message': '非法字符'})
@@ -198,7 +201,7 @@ def send_code():
 	check_timestamp = datetime.now().timestamp()
 	if not 'time' in session:
 		session['time'] = 0
-	if username != 'nr0728' and check_timestamp - session['time'] < 5:
+	if username not in admin_list and check_timestamp - session['time'] < 5:
 		return jsonify({'status': 'FAIL', 'message': '发送消息的频率太快，请稍后再试'})
 	session['time'] = check_timestamp
 	user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -215,13 +218,13 @@ def send_code():
 	city = location_data.get('city', 'Unknown City')
 	region = location_data.get('region', 'Unknown Region')
 	country = location_data.get('country', 'Unknown Country')
-	if username == 'nr0728':
+	if username in admin_list:
 		print("admin sending message")
 		timestamp += f"<br>用户已启用隐藏 IP 服务"
 	else:
 		timestamp += f"<br>用户 IP：{user_ip}, {city}, {region}, {country}"
-	if username == 'nr0728':
-		username = '<strong><font color="#e74c3c" size="4">nr0728 </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
+	if username in admin_list:
+		username = '<strong><font color="#e74c3c" size="4">'+username+' </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
 	cleaned_message = cleaned_message.replace('<', '&lt;')
 	cleaned_message = cleaned_message.replace('>', '&gt;')
 	cleaned_message = '用户发送了<font color="red">代码</font>：<br><pre class="language-cpp"><code class="language-cpp">' + cleaned_message + '</code></pre>'
@@ -304,13 +307,13 @@ def captcha():
 
 @app.route('/panel')
 def panel():
-    if 'username' not in session or session['username'] != 'nr0728':
+    if 'username' not in session or session['username'] not in admin_list:
         return "Access denied", 403
     return render_template('panel.html', chat_history=chat_history)
 
 @app.route('/delete_message', methods=['POST'])
 def delete_message():
-    if 'username' not in session or session['username'] != 'nr0728':
+    if 'username' not in session or session['username'] not in admin_list:
         return jsonify({'status': 'FAIL', 'message': '你没有权限删除此消息'})
     
     timestamp = request.form['timestamp']
@@ -325,7 +328,7 @@ def delete_message():
 
 @app.route('/edit_message', methods=['POST'])
 def edit_message():
-    if 'username' not in session or session['username'] != 'nr0728':
+    if 'username' not in session or session['username'] not in admin_list:
         return jsonify({'status': 'FAIL', 'message': '你没有权限编辑此消息'})
 
     timestamp = request.form['timestamp']
@@ -344,7 +347,7 @@ def edit_message():
 
 @app.route('/edit_username', methods=['POST'])
 def edit_username():
-    if 'username' not in session or session['username'] != 'nr0728':
+    if 'username' not in session or session['username'] not in admin_list:
         return jsonify({'status': 'FAIL', 'message': '你没有权限修改用户名'})
 
     timestamp = request.form['timestamp']
@@ -363,7 +366,7 @@ def edit_username():
 
 @app.route('/edit_timestamp', methods=['POST'])
 def edit_timestamp():
-    if 'username' not in session or session['username'] != 'nr0728':
+    if 'username' not in session or session['username'] not in admin_list:
         return jsonify({'status': 'FAIL', 'message': '你没有权限修改标识符'})
 
     old_timestamp = request.form['old_timestamp']
