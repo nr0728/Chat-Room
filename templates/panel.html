@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员控制面板</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-    <link rel="stylesheet" href="https://gcore.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-     <script src="https://gcore.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='sweetalert2.min.css') }}">
+    <script src="{{ url_for('static', filename='sweetalert2.all.min.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='prism.css') }}">
+
 </head>
 <body>
     <div id="panel-container">
@@ -166,6 +168,6 @@
             });
         }
     </script>
+<script src="{{ url_for('static', filename='prism.js') }}"></script>
 </body>
 </html>
-
