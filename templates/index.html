@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>聊天室</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
- 	<link href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.12.0/sweetalert2.min.css" rel="stylesheet"></link>
-	<link href="../cdn/prism.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='prism.css') }}">
+    <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+	<link href="{{ url_for('static', filename='sweetalert2.all.min.js') }}" rel="stylesheet"></link>
 </head>
 <body>
 	<input type="text" style="display:none">
@@ -397,14 +397,15 @@ function register() {
             });
         }
     </script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.12.0/sweetalert2.min.js"></script>
-<script src="../cdn/prism.js"></script>
+	<script src="{{ url_for('static', filename='sweetalert2.all.min.js') }}"></script>
+<script src="{{ url_for('static', filename='prism.js') }}"></script>
+
 <br><br>
 <footer>
 <center>
 <font face="Consolas" color="#000">
 Made by nr0728, Long Long Tech. <br>
-Using <a href="https://github.com/nr0728/Chat-Room" style="text-decoration: none;"><font color="#8CC269">Version 0.2.3 of Chat-Room</font></a>.
+Using <a href="https://github.com/nr0728/Chat-Room" style="text-decoration: none;"><font color="#8CC269">Version 0.2.2 of Chat-Room</font></a>.
 </center>
 </font>
 </footer>
