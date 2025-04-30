@@ -230,7 +230,7 @@ fetch('user_status', {
                 const chatHistoryDiv = document.getElementById('chat-history');
                 chatHistoryDiv.innerHTML = '';
                 const p = document.createElement('p');
-                p.innerHTML = `<strong><font size="5">我们的新域名：<a href="${window.location.href}">${window.location.href}</a><br>Our New Domain: <a href="${window.location.href}">${window.location.href}</a></font></strong>`;
+                p.innerHTML = `<strong><font size="5">我们的新域名：<a href="https://talkit.me">https://talkit.me</a><br>Our New Domain: <a href="https://talkit.me">https://talkit.me</a></font></strong>`;
                 chatHistoryDiv.appendChild(p);
                 data.reverse().forEach(entry => {
                     appendMessageToChatHistory(entry.timestamp, entry.username, entry.message);
