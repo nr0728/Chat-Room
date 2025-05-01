@@ -210,9 +210,11 @@ fetch('user_status', {
 						body: ``
 					});
 					updateChatHistory();
+                    document.getElementById('panel-button').style.display = 'none';
 				} else {
             		document.getElementById('login-form').style.display = 'block';
 		            document.getElementById('captcha-image-log').src = '/captcha?'+String(Math.random(1,1145141919810));
+					document.getElementById('panel-button').style.display = 'none';
 				}
 			});
         }
