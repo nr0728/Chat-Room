@@ -14,8 +14,7 @@ from flask_socketio import SocketIO, emit
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于会话管理
 socketio = SocketIO(app)
-# 版本号
-VERSION = '0.3.2'
+
 # 存储聊天记录的 JSON 文件路径
 CHAT_HISTORY_FILE = 'chat_history.json'
 chat_history = []
@@ -123,7 +122,7 @@ def generate_captcha_image(size=(120, 60), characterNumber=5, bgcolor=getColor2(
 
 @app.route('/')
 def index():
-    return render_template('index.html',VERSION=VERSION)
+    return render_template('index.html')
 
 
 @app.route('/user_status', methods=['POST'])
