@@ -436,7 +436,7 @@ if __name__ == '__main__':
     load_users()
     for admin in admin_list:
         if admin not in users:
-            prompt = f"管理员用户 {admin} 未注册，请输入这个用户的密码，将会自动注册，直接回车表示跳过："
+            prompt = f"The administrator account '{admin}' is not currently registered. Please enter the password for this user to proceed with automatic registration. To skip this step, simply press Enter:"
             admin_password = getpass.getpass(prompt)
             if admin_password:
                 register_admin(admin, admin_password)
