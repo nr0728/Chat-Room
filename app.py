@@ -183,6 +183,7 @@ def send_message():
         city = 'Unknown City'
         region = 'Unknown Region'
         country = 'Unknown Country'
+        
     if username in admin_list:
         print("admin sending message")
         timestamp += f"<br>用户已启用隐藏 IP 服务"
@@ -301,6 +302,11 @@ def register():
     session['captcha'] = str(random.randint(1, 1145141919810))
     return jsonify({'status': 'OK'})
 
+def register_admin(username,password):
+    username = bleach.clean(username, tags=[], attributes={})
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    users[username] = hashed_password
+    save_users()
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -427,5 +433,11 @@ def edit_timestamp():
 if __name__ == '__main__':
     load_history()
     load_users()
+    for i in admin_list:
+        if i not in users:
+            print('管理员用户',i,'未注册，请输入这个用户的密码，将会自动注册，直接换行表示跳过：',end='')
+            admin_password=input()
+            if admin_password:
+                register_admin(i,admin_password)
     socketio.run(app, host='0.0.0.0', port=1145)
     
