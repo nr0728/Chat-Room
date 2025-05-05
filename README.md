@@ -1,7 +1,6 @@
 
 <div align="center">
   <h1>Chat-Room</h1>
-  <p>Made by nr0728</p>
 </div>
 
 ## What's this?
