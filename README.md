@@ -35,6 +35,6 @@ python app.py
 
 恢复 screen 终端：`screen -r <终端名>`。
 
-## 演示
+## 注意
 
-<https://chat.llong.tech>。(currently unavailable)
+你需要在代码里修改管理员列表，并且管理员用户不是默认创建的，你需要注册一个用户名在管理员列表里的用户，这个用户会自动成为管理员。
