@@ -27,7 +27,7 @@ users = {}
 BANNED_IP = ['211.158.25.248', '122.224.219.246']
 
 # 管理员列表
-admin_list = ['nr0728']
+admin_list = ['your-admin-username'] # 请自定义
 
 # 允许的 HTML 标签和属性白名单
 allowed_tags = ['p', 'br']
