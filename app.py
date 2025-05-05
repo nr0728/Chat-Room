@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
 from flask_socketio import SocketIO, emit
+import getpass
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于会话管理
@@ -302,7 +303,7 @@ def register():
     session['captcha'] = str(random.randint(1, 1145141919810))
     return jsonify({'status': 'OK'})
 
-def register_admin(username,password):
+def register_admin(username, password):
     username = bleach.clean(username, tags=[], attributes={})
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     users[username] = hashed_password
@@ -433,11 +434,11 @@ def edit_timestamp():
 if __name__ == '__main__':
     load_history()
     load_users()
-    for i in admin_list:
-        if i not in users:
-            print('管理员用户',i,'未注册，请输入这个用户的密码，将会自动注册，直接换行表示跳过：',end='')
-            admin_password=input()
+    for admin in admin_list:
+        if admin not in users:
+            prompt = f"管理员用户 {admin} 未注册，请输入这个用户的密码，将会自动注册，直接回车表示跳过："
+            admin_password = getpass.getpass(prompt)
             if admin_password:
-                register_admin(i,admin_password)
+                register_admin(admin, admin_password)
     socketio.run(app, host='0.0.0.0', port=1145)
     
