@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
 from flask_socketio import SocketIO, emit
+import getpass
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于会话管理
@@ -183,6 +184,7 @@ def send_message():
         city = 'Unknown City'
         region = 'Unknown Region'
         country = 'Unknown Country'
+        
     if username in admin_list:
         print("admin sending message")
         timestamp += f"<br>用户已启用隐藏 IP 服务"
@@ -301,6 +303,11 @@ def register():
     session['captcha'] = str(random.randint(1, 1145141919810))
     return jsonify({'status': 'OK'})
 
+def register_admin(username, password):
+    username = bleach.clean(username, tags=[], attributes={})
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    users[username] = hashed_password
+    save_users()
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -427,5 +434,11 @@ def edit_timestamp():
 if __name__ == '__main__':
     load_history()
     load_users()
+    for admin in admin_list:
+        if admin not in users:
+            prompt = f"管理员用户 {admin} 未注册，请输入这个用户的密码，将会自动注册，直接回车表示跳过："
+            admin_password = getpass.getpass(prompt)
+            if admin_password:
+                register_admin(admin, admin_password)
     socketio.run(app, host='0.0.0.0', port=1145)
     
