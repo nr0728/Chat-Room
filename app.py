@@ -11,6 +11,7 @@ import io
 import base64
 from flask_socketio import SocketIO, emit
 import getpass
+import pyotp
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于会话管理
@@ -23,6 +24,9 @@ chat_history = []
 # 存储用户信息的 JSON 文件路径
 USER_DATA_FILE = 'password.json'
 users = {}
+
+# 存储用户 2FA 密钥的 JSON 文件路径
+USER_2FA_KEY_FILE = '2fa.json'
 
 # 封禁的 IP 列表
 BANNED_IP = ['211.158.25.248', '122.224.219.246']
@@ -52,11 +56,21 @@ def load_users():
     except FileNotFoundError:
         users = {}
 
+def load_2fa_keys():
+    global _2fa_keys
+    try:
+        with open(USER_2FA_KEY_FILE, 'r') as file:
+            _2fa_keys = json.load(file)
+    except FileNotFoundError:
+        _2fa_keys = {}
 
 def save_users():
     with open(USER_DATA_FILE, 'w') as file:
         json.dump(users, file)
 
+def save_2fa_keys():
+    with open(USER_2FA_KEY_FILE, 'w') as file:
+        json.dump(_2fa_keys, file)
 
 characters = "wertyupadfghjkxcvbnm34578"
 
@@ -430,10 +444,15 @@ def edit_timestamp():
 
     return jsonify({'status': 'OK'})
 
+def add_2fa_for_user(username):
+    _2fa_keys[username] = pyotp.random_base32()
+    save_2fa_keys()
+    return _2fa_keys[username]
 
 if __name__ == '__main__':
     load_history()
     load_users()
+    load_2fa_keys()
     for admin in admin_list:
         if admin not in users:
             prompt = f"The administrator account '{admin}' is not currently registered. Please enter the password for this user to proceed with automatic registration. To skip this step, simply press Enter:"
