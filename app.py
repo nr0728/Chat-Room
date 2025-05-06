@@ -27,6 +27,7 @@ users = {}
 
 # 存储用户 2FA 密钥的 JSON 文件路径
 USER_2FA_KEY_FILE = '2fa.json'
+_2fa_keys = {}
 
 # 封禁的 IP 列表
 BANNED_IP = ['211.158.25.248', '122.224.219.246']
