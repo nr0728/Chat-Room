@@ -1,6 +1,5 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, send_file
 import requests
-import string
 import json
 from datetime import datetime
 import bleach
@@ -8,10 +7,10 @@ import hashlib
 import random
 from PIL import Image, ImageDraw, ImageFont
 import io
-import base64
 from flask_socketio import SocketIO, emit
 import getpass
 import pyotp
+import qrcode
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于会话管理
@@ -143,14 +142,18 @@ def index():
 
 @app.route('/user_status', methods=['POST'])
 def user_status():
+    load_2fa_keys()
     print("fetching user status")
     username = session.get('username')
     print("fetching user status: get")
+    print(_2fa_keys)
+    print(username)
     if not username:
         return jsonify({'status': 'FAIL', 'message': 'login required'})
+    is_2fa_enabled = username in _2fa_keys
     if username in admin_list:
         username = '<strong><font color="#e74c3c" size="4">' + username + ' </font><button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
-    return jsonify({'status': 'OK', 'message': username})
+    return jsonify({'status': 'OK', 'message': username, 'is_2fa_enabled': is_2fa_enabled})
 
 
 @app.route('/send_message', methods=['POST'])
@@ -339,6 +342,12 @@ def login():
     if username in users and users[username] == hashed_password:
         session['username'] = username
         session['captcha'] = str(random.randint(1, 1145141919810))
+
+        # 如果用户启用了 2FA，则需要验证 2FA
+        if username in _2fa_keys:
+            session['2fa_verified'] = False
+            return jsonify({'status': '2FA_REQUIRED', 'message': '需要进行 2FA 验证'})
+
         return jsonify({'status': 'OK'})
     else:
         session['captcha'] = str(random.randint(1, 1145141919810))
@@ -359,7 +368,6 @@ def captcha():
     captcha_image = res1[0]
     session['captcha'] = res1[1]
     # 返回图片时需要设置响应头
-    from flask import send_file
     return send_file(captcha_image, mimetype='image/png')
 
 
@@ -445,6 +453,56 @@ def edit_timestamp():
 
     return jsonify({'status': 'OK'})
 
+@app.route('/enable_2fa', methods=['POST'])
+def enable_2fa():
+    if 'username' not in session:
+        return jsonify({'status': 'FAIL', 'message': '需要登录'})
+
+    username = session['username']
+    if username not in users:
+        return jsonify({'status': 'FAIL', 'message': '用户不存在'})
+
+    if username in _2fa_keys:
+        return jsonify({'status': 'FAIL', 'message': '2FA 已启用'})
+
+    # 生成 2FA 密钥
+    secret = pyotp.random_base32()
+    session['2fa_temp_secret'] = secret  # 暂存密钥
+
+    # 生成二维码
+    otp_uri = pyotp.totp.TOTP(secret).provisioning_uri(name=username, issuer_name="Chat Room App")
+    qr = qrcode.make(otp_uri)
+    buf = io.BytesIO()
+    qr.save(buf, format='PNG')
+    buf.seek(0)
+
+    return send_file(buf, mimetype='image/png')
+
+
+@app.route('/verify_2fa', methods=['POST'])
+def verify_2fa():
+    if 'username' not in session:
+        return jsonify({'status': 'FAIL', 'message': '需要登录'})
+
+    username = session['username']
+    temp_secret = session.get('2fa_temp_secret')  # 获取暂存密钥
+
+    if not temp_secret and username not in _2fa_keys:
+        return jsonify({'status': 'FAIL', 'message': '2FA 未启用'})
+
+    code = request.form['code']
+    totp = pyotp.TOTP(temp_secret if temp_secret else _2fa_keys[username])
+
+    if totp.verify(code):
+        if temp_secret:  # 如果是首次验证，保存密钥
+            _2fa_keys[username] = temp_secret
+            save_2fa_keys()
+            session.pop('2fa_temp_secret', None)  # 移除暂存密钥
+        session['2fa_verified'] = True
+        return jsonify({'status': 'OK', 'message': '2FA 验证成功'})
+    else:
+        return jsonify({'status': 'FAIL', 'message': '2FA 验证失败'})
+
 def add_2fa_for_user(username):
     _2fa_keys[username] = pyotp.random_base32()
     save_2fa_keys()
@@ -461,4 +519,4 @@ if __name__ == '__main__':
             if admin_password:
                 register_admin(admin, admin_password)
     socketio.run(app, host='0.0.0.0', port=1145)
-    
+

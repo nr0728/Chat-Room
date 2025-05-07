@@ -4,3 +4,4 @@ bleach
 flask-socketio
 requests
 pyotp
+qrcode

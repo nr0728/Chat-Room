@@ -107,10 +107,206 @@ fetch('user_status', {
             else document.getElementById('captcha-image-log').src="/captcha?"+String(Math.random(1,1145141919810));
 		}
 		function showUserInformation(uname) {
+			fetch('/user_status', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.status === 'OK') {
+					const is2FAEnabled = data.is_2fa_enabled; // 从后端返回是否启用了 2FA 的状态
+                    console.log(is2FAEnabled);
+					Swal.fire({
+						imageUrl: "https://cdn.luogu.com.cn/images/icon.png",
+						title: uname,
+						imageHeight: 96,
+						showCancelButton: true,
+						confirmButtonText: '启用 2FA',
+						cancelButtonText: '关闭',
+					}).then((result) => {
+						if (result.isConfirmed && !is2FAEnabled) {
+							fetch('/enable_2fa', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/x-www-form-urlencoded',
+								},
+							})
+							.then(response => {
+								if (response.ok) {
+									return response.blob();
+								} else {
+									throw new Error('启用 2FA 失败');
+								}
+							})
+							.then(blob => {
+								const url = URL.createObjectURL(blob);
+								Swal.fire({
+									title: '扫描二维码以启用 2FA',
+									imageUrl: url,
+									imageWidth: 200,
+									imageHeight: 200,
+									confirmButtonText: '完成',
+									cancelButtonText: '取消',
+									showCancelButton: true,
+								}).then((qrResult) => {
+									if (qrResult.isConfirmed) {
+										verify2FAForEnable();
+									} else {
+										Swal.fire({
+											title: '操作取消',
+											text: '2FA 未启用',
+											icon: 'info',
+										});
+									}
+								});
+							})
+							.catch(error => {
+								Swal.fire({
+									title: '错误',
+									text: error.message,
+									icon: 'error',
+								});
+							});
+						}else{
+                            Swal.fire({
+                                title: '错误',
+                                text: '2FA 已启用或用户手动取消操作',
+                                icon: 'error',
+                            });
+                        }
+					});
+				} else {
+					Swal.fire({
+						title: '错误',
+						text: '无法获取用户状态',
+						icon: 'error',
+					});
+				}
+			})
+			.catch(error => {
+				Swal.fire({
+					title: '错误',
+					text: '请求失败，请稍后重试',
+					icon: 'error',
+				});
+			});
+		}
+
+		function verify2FAForEnable() {
 			Swal.fire({
-				imageUrl: "https://cdn.luogu.com.cn/images/icon.png",
-				title: uname,
-				imageHeight: 96,
+				title: '验证 2FA',
+				input: 'text',
+				inputLabel: '请输入您的 2FA 验证码',
+				inputPlaceholder: '6 位数字验证码',
+				showCancelButton: true,
+				confirmButtonText: '验证',
+				cancelButtonText: '取消',
+			}).then((result) => {
+				if (result.isConfirmed) {
+					const code = result.value.trim();
+					if (!code) {
+						Swal.fire({
+							title: '错误',
+							text: '验证码不能为空',
+							icon: 'error',
+						});
+						return;
+					}
+
+					fetch('/verify_2fa', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded',
+						},
+						body: `code=${encodeURIComponent(code)}`,
+					})
+					.then(response => response.json())
+					.then(data => {
+						if (data.status === 'OK') {
+							Swal.fire({
+								title: '验证成功',
+								text: '2FA 已成功启用',
+								icon: 'success',
+							});
+						} else {
+							Swal.fire({
+								title: '验证失败',
+								text: data.message,
+								icon: 'error',
+							});
+						}
+					})
+					.catch(error => {
+						Swal.fire({
+							title: '错误',
+							text: '验证过程中出现问题',
+							icon: 'error',
+						});
+					});
+				} else {
+					Swal.fire({
+						title: '操作取消',
+						text: '2FA 未启用',
+						icon: 'info',
+					});
+				}
+			});
+		}
+
+		function verify2FA() {
+			Swal.fire({
+				title: '验证 2FA',
+				input: 'text',
+				inputLabel: '请输入您的 2FA 验证码',
+				inputPlaceholder: '6 位数字验证码',
+				showCancelButton: true,
+				confirmButtonText: '验证',
+				cancelButtonText: '取消',
+			}).then((result) => {
+				if (result.isConfirmed) {
+					const code = result.value.trim();
+					if (!code) {
+						Swal.fire({
+							title: '错误',
+							text: '验证码不能为空',
+							icon: 'error',
+						});
+						return;
+					}
+
+					fetch('/verify_2fa', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded',
+						},
+						body: `code=${encodeURIComponent(code)}`,
+					})
+					.then(response => response.json())
+					.then(data => {
+						if (data.status === 'OK') {
+							Swal.fire({
+								title: '验证成功',
+								text: '您的 2FA 验证已完成',
+								icon: 'success',
+							});
+						} else {
+							Swal.fire({
+								title: '验证失败',
+								text: data.message,
+								icon: 'error',
+							});
+						}
+					})
+					.catch(error => {
+						Swal.fire({
+							title: '错误',
+							text: '验证过程中出现问题',
+							icon: 'error',
+						});
+					});
+				}
 			});
 		}
         function showNotification(message, status, willAutomaticallyRefresh) {
@@ -392,9 +588,70 @@ function register() {
                 if (data.status === 'OK') {
                     showNotification('登录成功', 'ok', 1);
                     closeLoginForm();
+                } else if (data.status === '2FA_REQUIRED') {
+                    // 如果需要 2FA 验证
+                    verify2FAAfterLogin();
                 } else {
-					reloadCode(1);
+                    reloadCode(1);
                     showNotification(data.message, 'fail');
+                }
+            });
+        }
+
+        function verify2FAAfterLogin() {
+            Swal.fire({
+                title: '验证 2FA',
+                input: 'text',
+                inputLabel: '请输入您的 2FA 验证码',
+                inputPlaceholder: '6 位数字验证码',
+                showCancelButton: true,
+                confirmButtonText: '验证',
+                cancelButtonText: '取消',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const code = result.value.trim();
+                    if (!code) {
+                        Swal.fire({
+                            title: '错误',
+                            text: '验证码不能为空',
+                            icon: 'error',
+                        });
+                        return;
+                    }
+
+                    fetch('/verify_2fa', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `code=${encodeURIComponent(code)}`,
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'OK') {
+                            Swal.fire({
+                                title: '验证成功',
+                                text: '您的 2FA 验证已完成',
+                                icon: 'success',
+                            }).then(() => {
+                                showNotification('登录成功', 'ok', 1);
+                                closeLoginForm();
+                            });
+                        } else {
+                            Swal.fire({
+                                title: '验证失败',
+                                text: data.message,
+                                icon: 'error',
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            title: '错误',
+                            text: '验证过程中出现问题',
+                            icon: 'error',
+                        });
+                    });
                 }
             });
         }
@@ -404,12 +661,13 @@ function register() {
 
 <br><br>
 <footer>
-<center>
-<font face="Consolas" color="#000">
-Using <a href="https://github.com/nr0728/Chat-Room" style="text-decoration: none;"><font color="#8CC269">Chat-Room</font></a>.
-Latest Release: <img src="https://img.shields.io/github/v/release/nr0728/Chat-Room?color=%23FFFF00" />
-</center>
-</font>
+    <center>
+        <div style="display: inline-flex; align-items: center; font-family: Consolas; color: #000;">
+            Using <a href="https://github.com/nr0728/Chat-Room" style="text-decoration: none; margin: 0 5px;"><font color="#8CC269">Chat-Room</font></a>.
+            Latest Release: <img src="https://img.shields.io/github/v/release/nr0728/Chat-Room?color=%23FFFF00" style="height: 20px; vertical-align: middle;" />
+        </div>
+    </center>
 </footer>
+
 </body>
 </html>
