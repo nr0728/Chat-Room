@@ -116,18 +116,71 @@ fetch('user_status', {
 			.then(response => response.json())
 			.then(data => {
 				if (data.status === 'OK') {
-					const is2FAEnabled = data.is_2fa_enabled; // 从后端返回是否启用了 2FA 的状态
-                    console.log(is2FAEnabled);
 					Swal.fire({
 						imageUrl: "https://cdn.luogu.com.cn/images/icon.png",
 						title: uname,
 						imageHeight: 96,
 						showCancelButton: true,
-						confirmButtonText: '启用 2FA',
+						confirmButtonText: data.is_2fa_enabled ? '关闭 2FA' : '启用 2FA',
 						cancelButtonText: '关闭',
 					}).then((result) => {
-						if (result.isConfirmed && !is2FAEnabled) {
-							fetch('/enable_2fa', {
+						if (result.isConfirmed) {
+							if (data.is_2fa_enabled) {
+								// 验证 2FA 后关闭
+								Swal.fire({
+									title: '验证 2FA',
+									input: 'text',
+									inputLabel: '请输入您的 2FA 验证码',
+									inputPlaceholder: '6 位数字验证码',
+									showCancelButton: true,
+									confirmButtonText: '验证并关闭 2FA',
+									cancelButtonText: '取消',
+								}).then((verifyResult) => {
+									if (verifyResult.isConfirmed) {
+										const code = verifyResult.value.trim();
+										if (!code) {
+											Swal.fire({
+												title: '错误',
+												text: '验证码不能为空',
+												icon: 'error',
+											});
+											return;
+										}
+
+										fetch('/disable_2fa', {
+											method: 'POST',
+											headers: {
+												'Content-Type': 'application/x-www-form-urlencoded',
+											},
+											body: `code=${encodeURIComponent(code)}`,
+										})
+										.then(response => response.json())
+										.then(data => {
+											if (data.status === 'OK') {
+												Swal.fire({
+													title: '2FA 已禁用',
+													text: '您已成功关闭 2FA',
+													icon: 'success',
+												});
+											} else {
+												Swal.fire({
+													title: '错误',
+													text: data.message,
+													icon: 'error',
+												});
+											}
+										})
+										.catch(error => {
+											Swal.fire({
+												title: '错误',
+												text: '禁用 2FA 时出现问题',
+												icon: 'error',
+											});
+										});
+									}
+								});
+							} else {
+								fetch('/enable_2fa', {
 								method: 'POST',
 								headers: {
 									'Content-Type': 'application/x-www-form-urlencoded',
@@ -135,18 +188,22 @@ fetch('user_status', {
 							})
 							.then(response => {
 								if (response.ok) {
-									return response.blob();
+									return response.json(); // 返回 JSON 数据，包括二维码和密钥
 								} else {
 									throw new Error('启用 2FA 失败');
 								}
 							})
-							.then(blob => {
-								const url = URL.createObjectURL(blob);
+							.then(data => {
+								const qrUrl = data.qr_url; // 二维码 URL
+								const secretKey = data.secret_key; // 2FA 密钥
 								Swal.fire({
 									title: '扫描二维码以启用 2FA',
-									imageUrl: url,
-									imageWidth: 200,
-									imageHeight: 200,
+									html: `
+										<p>请使用 Google Authenticator 或其他 TOTP 应用扫描以下二维码。</p>
+										<img src="${qrUrl}" style="width: 200px; height: 200px;" />
+										<p>或者手动输入以下密钥：</p>
+										<p style="font-family: Consolas; font-size: 16px; color: #333;">${secretKey}</p>
+									`,
 									confirmButtonText: '完成',
 									cancelButtonText: '取消',
 									showCancelButton: true,
@@ -169,13 +226,8 @@ fetch('user_status', {
 									icon: 'error',
 								});
 							});
-						}else{
-                            Swal.fire({
-                                title: '错误',
-                                text: '2FA 已启用或用户手动取消操作',
-                                icon: 'error',
-                            });
-                        }
+							}
+						}
 					});
 				} else {
 					Swal.fire({
@@ -291,6 +343,7 @@ fetch('user_status', {
 								text: '您的 2FA 验证已完成',
 								icon: 'success',
 							});
+							return true;
 						} else {
 							Swal.fire({
 								title: '验证失败',

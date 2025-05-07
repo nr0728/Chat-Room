@@ -11,6 +11,7 @@ from flask_socketio import SocketIO, emit
 import getpass
 import pyotp
 import qrcode
+import base64
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于会话管理
@@ -142,6 +143,7 @@ def index():
 
 @app.route('/user_status', methods=['POST'])
 def user_status():
+    load_users()
     load_2fa_keys()
     print("fetching user status")
     username = session.get('username')
@@ -475,8 +477,9 @@ def enable_2fa():
     buf = io.BytesIO()
     qr.save(buf, format='PNG')
     buf.seek(0)
+    qr_url = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
 
-    return send_file(buf, mimetype='image/png')
+    return jsonify({'status': 'OK', 'qr_url': qr_url, 'secret_key': secret})
 
 
 @app.route('/verify_2fa', methods=['POST'])
@@ -502,6 +505,30 @@ def verify_2fa():
         return jsonify({'status': 'OK', 'message': '2FA 验证成功'})
     else:
         return jsonify({'status': 'FAIL', 'message': '2FA 验证失败'})
+
+@app.route('/disable_2fa', methods=['POST'])
+def disable_2fa():
+    if 'username' not in session:
+        return jsonify({'status': 'FAIL', 'message': '需要登录'})
+
+    username = session['username']
+    if username not in _2fa_keys:
+        return jsonify({'status': 'FAIL', 'message': '2FA 未启用'})
+
+    # 获取用户提交的 2FA 验证码
+    code = request.form.get('code')
+    if not code:
+        return jsonify({'status': 'FAIL', 'message': '需要提供 2FA 验证码'})
+
+    # 验证 2FA 验证码
+    totp = pyotp.TOTP(_2fa_keys[username])
+    if not totp.verify(code):
+        return jsonify({'status': 'FAIL', 'message': '2FA 验证失败'})
+
+    # 删除用户的 2FA 密钥
+    del _2fa_keys[username]
+    save_2fa_keys()
+    return jsonify({'status': 'OK', 'message': '2FA 已禁用'})
 
 def add_2fa_for_user(username):
     _2fa_keys[username] = pyotp.random_base32()
