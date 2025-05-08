@@ -54,6 +54,7 @@
             <input type="text" id="login-captcha" placeholder="验证码">
             <img id="captcha-image-log" src="#" alt="验证码" onclick="reloadCode(1);">
             <button onclick="login()">登录</button>
+            <button onclick="loginWithLoginkey()">使用 Loginkey 登录</button>
         </div>
     </div>
 
@@ -123,6 +124,7 @@ fetch('user_status', {
 						showCancelButton: true,
 						confirmButtonText: data.is_2fa_enabled ? '关闭 2FA' : '启用 2FA',
 						cancelButtonText: '关闭',
+						footer: '<button onclick="openLoginkeyRegistration()">注册 Loginkey</button>'
 					}).then((result) => {
 						if (result.isConfirmed) {
 							if (data.is_2fa_enabled) {
@@ -244,8 +246,100 @@ fetch('user_status', {
 					icon: 'error',
 				});
 			});
-		}
-
+		}		
+		function openLoginkeyRegistration() {
+    fetch('/user_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: ``
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'OK') {
+            if (data.is_2fa_enabled) {
+                // 如果启用了 2FA，弹出 2FA 验证窗口
+                Swal.fire({
+                    title: '注册 Loginkey',
+                    input: 'text',
+                    inputLabel: '请输入 2FA 验证码',
+                    inputPlaceholder: '6 位数字验证码',
+                    showCancelButton: true,
+                    confirmButtonText: '验证并注册',
+                    cancelButtonText: '取消',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const code = result.value.trim();
+                        if (!code) {
+                            Swal.fire({
+                                title: '错误',
+                                text: '验证码不能为空',
+                                icon: 'error',
+                            });
+                            return;
+                        }
+                        // 提交 2FA 验证码和注册请求
+                        fetch('/register_loginkey', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `code=${encodeURIComponent(code)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'OK') {
+                                Swal.fire({
+                                    title: '注册成功',
+                                    text: `请妥善保存您的 Loginkey：${data.loginkey}`,
+                                    icon: 'success',
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: '注册失败',
+                                    text: data.message,
+                                    icon: 'error',
+                                });
+                            }
+                        });
+                    }
+                });
+            } else {
+                // 如果未启用 2FA，直接注册 Loginkey
+                fetch('/register_loginkey', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: ``
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        Swal.fire({
+                            title: '注册成功',
+                            text: `请妥善保存您的 Loginkey：${data.loginkey}`,
+                            icon: 'success',
+                        });
+                    } else {
+                        Swal.fire({
+                            title: '注册失败',
+                            text: data.message,
+                            icon: 'error',
+                        });
+                    }
+                });
+            }
+        } else {
+            Swal.fire({
+                title: '错误',
+                text: '请先登录后再注册 Loginkey。',
+                icon: 'error',
+            });
+        }
+    });
+}
 		function verify2FAForEnable() {
 			Swal.fire({
 				title: '验证 2FA',
@@ -708,6 +802,61 @@ function register() {
                 }
             });
         }
+
+        function loginWithLoginkey() {
+    Swal.fire({
+        title: '使用 Loginkey 登录',
+        html: `
+            <input type="text" id="swal-loginkey" class="swal2-input" placeholder="Loginkey">
+        `,
+        confirmButtonText: '登录',
+        cancelButtonText: '取消',
+        showCancelButton: true,
+        preConfirm: () => {
+            const loginkey = document.getElementById('swal-loginkey').value.trim();
+            if (!loginkey) {
+                Swal.showValidationMessage('Loginkey 不能为空');
+                return false;
+            }
+            return loginkey;
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const loginkey = result.value;
+            fetch('/login_with_loginkey', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `loginkey=${encodeURIComponent(loginkey)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    Swal.fire({
+                        title: '登录成功',
+                        icon: 'success',
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: '登录失败',
+                        text: data.message,
+                        icon: 'error',
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: '错误',
+                    text: '登录过程中出现问题，请稍后重试。',
+                    icon: 'error',
+                });
+            });
+        }
+    });
+}
     </script>
 	<script src="{{ url_for('static', filename='sweetalert2.all.min.js') }}"></script>
 <script src="{{ url_for('static', filename='prism.js') }}"></script>
