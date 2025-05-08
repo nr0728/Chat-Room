@@ -29,6 +29,10 @@ users = {}
 USER_2FA_KEY_FILE = '2fa.json'
 _2fa_keys = {}
 
+# 存储用户 Loginkey 的 JSON 文件路径
+USER_PASSKEY_FILE = 'loginkeys.json'
+loginkeys = {}
+
 # 封禁的 IP 列表
 BANNED_IP = ['211.158.25.248', '122.224.219.246']
 
@@ -65,6 +69,15 @@ def load_2fa_keys():
     except FileNotFoundError:
         _2fa_keys = {}
 
+# 加载 Loginkey 数据
+def load_loginkeys():
+    global loginkeys
+    try:
+        with open(USER_PASSKEY_FILE, 'r') as file:
+            loginkeys = json.load(file)
+    except FileNotFoundError:
+        loginkeys = {}
+
 def save_users():
     with open(USER_DATA_FILE, 'w') as file:
         json.dump(users, file)
@@ -72,6 +85,11 @@ def save_users():
 def save_2fa_keys():
     with open(USER_2FA_KEY_FILE, 'w') as file:
         json.dump(_2fa_keys, file)
+
+# 保存 Loginkey 数据
+def save_loginkeys():
+    with open(USER_PASSKEY_FILE, 'w') as file:
+        json.dump(loginkeys, file)
 
 characters = "wertyupadfghjkxcvbnm34578"
 
@@ -323,6 +341,36 @@ def register():
     session['captcha'] = str(random.randint(1, 1145141919810))
     return jsonify({'status': 'OK'})
 
+@app.route('/register_loginkey', methods=['POST'])
+def register_loginkey():
+    if 'username' not in session:
+        return jsonify({'status': 'FAIL', 'message': '需要登录'})
+
+    username = session['username']
+    if username not in users:
+        return jsonify({'status': 'FAIL', 'message': '用户不存在'})
+
+    # 如果启用了 2FA，则需要验证 2FA
+    if username in _2fa_keys:
+        code = request.form.get('code')
+        if not code:
+            return jsonify({'status': 'FAIL', 'message': '需要提供 2FA 验证码'})
+        totp = pyotp.TOTP(_2fa_keys[username])
+        if not totp.verify(code):
+            return jsonify({'status': 'FAIL', 'message': '2FA 验证失败'})
+
+    # 生成唯一的 Loginkey
+    while True:
+        loginkey = hashlib.sha256(f"{username}{random.randint(1, 1_000_000)}".encode()).hexdigest()
+        if loginkey not in loginkeys.values():
+            break
+
+    # 保存 Loginkey
+    loginkeys[username] = loginkey
+    save_loginkeys()
+
+    return jsonify({'status': 'OK', 'loginkey': loginkey})
+
 def register_admin(username, password):
     username = bleach.clean(username, tags=[], attributes={})
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
@@ -355,6 +403,18 @@ def login():
         session['captcha'] = str(random.randint(1, 1145141919810))
         return jsonify({'status': 'FAIL', 'message': '用户名或密码错误'})
 
+@app.route('/login_with_loginkey', methods=['POST'])
+def login_with_loginkey():
+    loginkey = request.form.get('loginkey')
+
+    # 检查 Loginkey 是否存在并有效
+    username = next((user for user, key in loginkeys.items() if key == loginkey), None)
+    if not username:
+        return jsonify({'status': 'FAIL', 'message': '无效的 Loginkey'})
+
+    # 设置会话
+    session['username'] = username
+    return jsonify({'status': 'OK', 'message': '登录成功'})
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -539,6 +599,7 @@ if __name__ == '__main__':
     load_history()
     load_users()
     load_2fa_keys()
+    load_loginkeys()
     for admin in admin_list:
         if admin not in users:
             prompt = f"The administrator account '{admin}' is not currently registered. Please enter the password for this user to proceed with automatic registration. To skip this step, simply press Enter:"

@@ -1,3 +1,4 @@
 password.json
 2fa.json
-chat-history.json
+chat_history.json
+loginkeys.json
