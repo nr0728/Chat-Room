@@ -30,7 +30,7 @@ USER_2FA_KEY_FILE = '2fa.json'
 _2fa_keys = {}
 
 # 存储用户 Loginkey 的 JSON 文件路径
-USER_PASSKEY_FILE = 'loginkeys.json'
+USER_LOGINKEY_FILE = 'loginkeys.json'
 loginkeys = {}
 
 # 封禁的 IP 列表
@@ -73,7 +73,7 @@ def load_2fa_keys():
 def load_loginkeys():
     global loginkeys
     try:
-        with open(USER_PASSKEY_FILE, 'r') as file:
+        with open(USER_LOGINKEY_FILE, 'r') as file:
             loginkeys = json.load(file)
     except FileNotFoundError:
         loginkeys = {}
@@ -88,7 +88,7 @@ def save_2fa_keys():
 
 # 保存 Loginkey 数据
 def save_loginkeys():
-    with open(USER_PASSKEY_FILE, 'w') as file:
+    with open(USER_LOGINKEY_FILE, 'w') as file:
         json.dump(loginkeys, file)
 
 characters = "wertyupadfghjkxcvbnm34578"
