@@ -43,6 +43,10 @@ admin_list = ['your-admin-username'] # 请自定义
 allowed_tags = ['p', 'br']
 allowed_attrs = {'*': ['style'], 'p': ['style']}
 
+def shuffle_string(s):
+    s_list = list(s)
+    random.shuffle(s_list)
+    return ''.join(s_list)
 
 def load_history():
     global chat_history
@@ -361,12 +365,15 @@ def register_loginkey():
 
     # 生成唯一的 Loginkey
     while True:
-        loginkey = hashlib.sha256(f"{username}{random.randint(1, 1_000_000)}".encode()).hexdigest()
-        if loginkey not in loginkeys.values():
+        random_base32 = pyotp.random_base32()
+        loginkey = hashlib.sha256(shuffle_string(f"{username}{random_base32}{pyotp.TOTP(random_base32).now()}").encode()).hexdigest()
+        del random_base32
+        # 检查 Loginkey 是否已存在
+        if loginkey not in loginkeys:
             break
 
     # 保存 Loginkey
-    loginkeys[username] = loginkey
+    loginkeys[loginkey] = username
     save_loginkeys()
 
     return jsonify({'status': 'OK', 'loginkey': loginkey})
@@ -408,8 +415,9 @@ def login_with_loginkey():
     loginkey = request.form.get('loginkey')
 
     # 检查 Loginkey 是否存在并有效
-    username = next((user for user, key in loginkeys.items() if key == loginkey), None)
-    if not username:
+    if loginkey in loginkeys:
+        username = loginkeys[loginkey]
+    else:
         return jsonify({'status': 'FAIL', 'message': '无效的 Loginkey'})
 
     # 设置会话
