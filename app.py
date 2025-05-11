@@ -402,6 +402,7 @@ def register_admin(username, password):
 
 @app.route('/login', methods=['POST'])
 def login():
+    # 获取用户输入的用户名、密码和验证码
     username = request.form['username']
     password = request.form['password']
     captcha = request.form['captcha']
