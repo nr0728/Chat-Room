@@ -722,25 +722,82 @@ function register() {
             const username = document.getElementById('login-username').value.trim();
             const password = document.getElementById('login-password').value.trim();
             const captcha = document.getElementById('login-captcha').value.trim();
-
-            fetch('/login', {
+            fetch('/user_status_', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&captcha=${encodeURIComponent(captcha)}`
+                body: `username=${encodeURIComponent(username)}`
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'OK') {
-                    showNotification('登录成功', 'ok', 1);
-                    closeLoginForm();
-                } else if (data.status === '2FA_REQUIRED') {
-                    // 如果需要 2FA 验证
-                    verify2FAAfterLogin();
-                } else {
-                    reloadCode(1);
-                    showNotification(data.message, 'fail');
+                    if (data.is_2fa_enabled) {
+                        Swal.fire({
+                            title: '验证 2FA',
+                            input: 'text',
+                            inputLabel: '请输入您的 2FA 验证码',
+                            inputPlaceholder: '6 位数字验证码',
+                            showCancelButton: true,
+                            confirmButtonText: '验证',
+                            cancelButtonText: '取消',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                const code = result.value.trim();
+                                if (!code) {
+                                    Swal.fire({
+                                        title: '错误',
+                                        text: '验证码不能为空',
+                                        icon: 'error',
+                                    });
+                                    return;
+                                }
+
+                                fetch('/login', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded',
+                                    },
+                                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&captcha=${encodeURIComponent(captcha)}&code=${encodeURIComponent(code)}`
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.status === 'OK') {
+                                        showNotification('登录成功', 'ok', 1);
+                                        closeLoginForm();
+                                    } else {
+                                        showNotification(data.message, 'fail');
+                                        reloadCode(1);
+                                    }
+                                })
+                                .catch(error => {
+                                    Swal.fire({
+                                        title: '错误',
+                                        text: '登录过程中出现问题',
+                                        icon: 'error',
+                                    });
+                                });
+                            }
+                        });
+                    } else {
+                        fetch('/login', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&captcha=${encodeURIComponent(captcha)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'OK') {
+                                showNotification('登录成功', 'ok', 1);
+                                closeLoginForm();
+                            } else {
+                                showNotification(data.message, 'fail');
+                                reloadCode(1);
+                            }
+                        });
+                    }
                 }
             });
         }
