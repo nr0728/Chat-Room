@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+        #language-selector{
+            background-color: #8CC269;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 0 4px 4px 0;
+            padding: 10px 2.5px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+        }
+    </style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>聊天室</title>
@@ -22,12 +36,35 @@
         <div id="chat-history">
         </div>
         <div id="input-container">
-            <input type="text" id="message-input" placeholder="输入你的消息…" style="height:60px;" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');">
-            <button onclick="sendMessage()" style="height:60px;padding:10px;">&nbsp;&nbsp;发送消息&nbsp;&nbsp;</button>
-        </div>
+    <input type="text" id="message-input" placeholder="输入你的消息…" style="height:60px;" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');">
+    <!-- &nbsp;&nbsp;
+    <button onclick="startVoiceInput()" style="height:60px;padding:10px;">🎤 语音输入</button>
+    &nbsp;&nbsp;
+    <select id="language-selector" style="height:60px;background-color: #8CC269;">
+    <option value="zh-CN">中文</option>
+    <option value="en-US">English</option>
+    <option value="es-ES">Español</option>
+    <option value="fr-FR">Français</option>
+    <option value="de-DE">Deutsch</option>
+    <option value="ja-JP">日本語</option>
+    <option value="ko-KR">한국어</option>
+    <option value="it-IT">Italiano</option>
+    <option value="pt-BR">Português (Brasil)</option>
+    <option value="ru-RU">Русский</option>
+    <option value="ar-SA">العربية</option>
+    <option value="hi-IN">हिन्दी</option>
+</select> -->
+    &nbsp;&nbsp;
+    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;">😀 插入 Emoji</button>
+    &nbsp;&nbsp;
+    <button onclick="sendMessage()" style="height:60px;">📩 发送消息</button>
+</div>
         <div id="input-container-code">
             <textarea type="text" id="message-input-code" class="swal-content__textarea" placeholder=" 输入你的代码…" rows="2" autocomplete="off"></textarea>
-            <button onclick="sendCode()">发送代码</button>
+            &nbsp;&nbsp;
+            <button onclick="openEmojiPickerCode()" style="height:60px;padding:10px;">😀 插入 Emoji</button>
+            &nbsp;&nbsp;
+            <button onclick="sendCode()">📩 发送代码</button>
         </div>
     </div>
 
@@ -247,6 +284,47 @@ fetch('user_status', {
 				});
 			});
 		}		
+        //         function startVoiceInput() {
+        //     if (!('webkitSpeechRecognition' in window)) {
+        //         Swal.fire({
+        //             title: '错误',
+        //             text: '您的浏览器不支持语音输入功能。',
+        //             icon: 'error',
+        //         });
+        //         return;
+        //     }
+        
+        //     const recognition = new webkitSpeechRecognition();
+        //     const selectedLanguage = document.getElementById('language-selector').value; // 获取用户选择的语言
+        //     recognition.lang = selectedLanguage; // 设置语言
+        //     recognition.interimResults = false;
+        //     recognition.maxAlternatives = 1;
+        
+        //     Swal.fire({
+        //         title: '正在监听...',
+        //         html: '请开始说话...',
+        //         allowOutsideClick: false,
+        //         showCancelButton: true,
+        //         cancelButtonText: '取消',
+        //         didOpen: () => {
+        //             recognition.start();
+        //         },
+        //     });
+        
+        //     recognition.onresult = (event) => {
+        //         const transcript = event.results[0][0].transcript;
+        //         document.getElementById('message-input').value += transcript;
+        //         Swal.close();
+        //     };
+        
+        //     recognition.onerror = (event) => {
+        //         Swal.fire({
+        //             title: '错误',
+        //             text: '语音识别失败，请重试。',
+        //             icon: 'error',
+        //         });
+        //     };
+        // }
 		function openLoginkeyRegistration() {
     fetch('/user_status', {
         method: 'POST',
@@ -604,23 +682,21 @@ fetch('user_status', {
             const messageInput = document.getElementById('message-input');
             const message = messageInput.value.trim();
 
-            if (message !== '') {
-                fetch('/send_message', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `message=${encodeURIComponent(message)}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'OK') {
-                        messageInput.value = '';
-                    } else {
-                        showNotification(data.message, 'fail');
-                    }
-                });
-            }
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `message=${encodeURIComponent(message)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    messageInput.value = '';
+                } else {
+                    showNotification(data.message, 'fail');
+                }
+            });
         }
 
 
@@ -628,56 +704,22 @@ fetch('user_status', {
             const messageInput = document.getElementById('message-input-code');
             const message = messageInput.value.trim();
 
-            if (message !== '') {
-                fetch('/send_code', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `message=${encodeURIComponent(message)}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'OK') {
-                        messageInput.value = '';
-                    } else {
-                        showNotification(data.message, 'fail');
-                    }
-                });
-            }
+            fetch('/send_code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `message=${encodeURIComponent(message)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    messageInput.value = '';
+                } else {
+                    showNotification(data.message, 'fail');
+                }
+            });
         }
-
-        function showEditForm(timestamp, message) {
-            const editInput = document.getElementById(`edit-input-${timestamp}`);
-            const saveButton = editInput.nextSibling;
-            editInput.value = message;
-            editInput.style.display = 'block';
-            saveButton.style.display = 'block';
-        }
-
-        function saveEditedMessage(timestamp) {
-            const editInput = document.getElementById(`edit-input-${timestamp}`);
-            const newMessage = editInput.value.trim();
-
-            if (newMessage !== '') {
-                fetch('/edit_message', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `timestamp=${encodeURIComponent(timestamp)}&new_message=${encodeURIComponent(newMessage)}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'OK') {
-                        updateChatHistory();
-                    } else {
-                        showNotification(data.message, 'fail');
-                    }
-                });
-            }
-        }
-
 
         document.getElementById('message-input').addEventListener('keyup', function(event) {
             if (event.key === 'Enter') {
@@ -857,7 +899,110 @@ function register() {
         }
     });
 }
+function openEmojiPicker() {
+    const emojis = [
+        '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤔',
+        '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓',
+        '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰',
+        '😱', '🥵', '🥶', '😳', '🤪', '😵', '😡', '😠', '🤬', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '😇', '🥳', '🥺', '🤠', '🤡',
+        '🤥', '🤫', '🤭', '🧐', '🤓', '😈', '👿', '👹', '👺', '💀', '☠️', '👻', '👽', '👾', '🤖', '💩', '😺', '😸', '😹', '😻',
+        '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔',
+        '❤️', '🧡', '💛', '💚', '💙', '💜', '🤎', '🖤', '🤍', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️',
+        '🗯️', '💭', '💤', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+        '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦵',
+        '🦿', '🦶', '👣', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄', '🫦', '👶', '🧒', '👦', '👧',
+        '🧑', '👱', '👨', '🧔', '🧔‍♂️', '🧔‍♀️', '👩', '🧓', '👴', '👵', '🙍', '🙍‍♂️', '🙍‍♀️', '🙎', '🙎‍♂️', '🙎‍♀️', '🙅', '🙅‍♂️',
+        '🙅‍♀️', '🙆', '🙆‍♂️', '🙆‍♀️', '💁', '💁‍♂️', '💁‍♀️', '🙋', '🙋‍♂️', '🙋‍♀️', '🧏', '🧏‍♂️', '🧏‍♀️', '🙇', '🙇‍♂️', '🙇‍♀️',
+        '🤦', '🤦‍♂️', '🤦‍♀️', '🤷', '🤷‍♂️', '🤷‍♀️', '🧑‍⚕️', '👨‍⚕️', '👩‍⚕️', '🧑‍🎓', '👨‍🎓', '👩‍🎓', '🧑‍🏫', '👨‍🏫', '👩‍🏫', '🧑‍⚖️',
+        '👨‍⚖️', '👩‍⚖️', '🧑‍🌾', '👨‍🌾', '👩‍🌾', '🧑‍🍳', '👨‍🍳', '👩‍🍳', '🧑‍🔧', '👨‍🔧', '👩‍🔧', '🧑‍🏭', '👨‍🏭', '👩‍🏭', '🧑‍💼', '👨‍💼',
+        '👩‍💼', '🧑‍🔬', '👨‍🔬', '👩‍🔬', '🧑‍💻', '👨‍💻', '👩‍💻', '🧑‍🎤', '👨‍🎤', '👩‍🎤', '🧑‍🎨', '👨‍🎨', '👩‍🎨', '🧑‍✈️', '👨‍✈️', '👩‍✈️',
+        '🧑‍🚀', '👨‍🚀', '👩‍🚀', '🧑‍🚒', '👨‍🚒', '👩‍🚒', '👮', '👮‍♂️', '👮‍♀️', '🕵️', '🕵️‍♂️', '🕵️‍♀️', '💂', '💂‍♂️', '💂‍♀️', '👷', '👷‍♂️',
+        '👷‍♀️', '🤴', '👸', '👳', '👳‍♂️', '👳‍♀️', '👲', '🧕', '🤵', '🤵‍♂️', '🤵‍♀️', '👰', '👰‍♂️', '👰‍♀️', '🤰', '🤱', '👩‍🍼', '👨‍🍼', '🧑‍🍼',
+        '👼', '🎅', '🤶', '🧑‍🎄', '🦸', '🦸‍♂️', '🦸‍♀️', '🦹', '🦹‍♂️', '🦹‍♀️', '🧙', '🧙‍♂️', '🧙‍♀️', '🧚', '🧚‍♂️', '🧚‍♀️', '🧛', '🧛‍♂️',
+        '🧛‍♀️', '🧜', '🧜‍♂️', '🧜‍♀️', '🧝', '🧝‍♂️', '🧝‍♀️', '🧞', '🧞‍♂️', '🧞‍♀️', '🧟', '🧟‍♂️', '🧟‍♀️', '🧌', '💆', '💆‍♂️', '💆‍♀️', '💇',
+        '💇‍♂️', '💇‍♀️', '🚶', '🚶‍♂️', '🚶‍♀️', '🧍', '🧍‍♂️', '🧍‍♀️', '🧎', '🧎‍♂️', '🧎‍♀️', '🦯', '🦼', '🦽', '🏃', '🏃‍♂️', '🏃‍♀️', '💃',
+        '🕺', '🕴️', '👯', '👯‍♂️', '👯‍♀️', '🧖', '🧖‍♂️', '🧖‍♀️', '🧘', '🧑‍🤝‍🧑', '👭', '👫', '👬', '💏', '👩‍❤️‍💋‍👨'
+    ];
+
+    let emojiHtml = '';
+    emojis.forEach(emoji => {
+        emojiHtml += `<button class="emoji-button" onclick="addEmojiToInput('${emoji}')">${emoji}</button>`;
+    });
+
+    Swal.fire({
+        title: '选择一个 Emoji',
+        html: `<div style="display: flex; flex-wrap: wrap; gap: 8.4px;">${emojiHtml}</div>`,
+        showConfirmButton: false,
+        showCancelButton: true,
+        cancelButtonText: '关闭',
+    });
+}
+
+function addEmojiToInput(emoji) {
+    const input = document.getElementById('message-input');
+    input.value += emoji;
+    Swal.close(); // 关闭 Emoji 选择器
+}
+
+        function openEmojiPickerCode() {
+            const emojis = [
+        '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤔',
+        '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓',
+        '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😩', '🤯', '😬', '😰',
+        '😱', '🥵', '🥶', '😳', '🤪', '😵', '😡', '😠', '🤬', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '😇', '🥳', '🥺', '🤠', '🤡',
+        '🤥', '🤫', '🤭', '🧐', '🤓', '😈', '👿', '👹', '👺', '💀', '☠️', '👻', '👽', '👾', '🤖', '💩', '😺', '😸', '😹', '😻',
+        '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔',
+        '❤️', '🧡', '💛', '💚', '💙', '💜', '🤎', '🖤', '🤍', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️',
+        '🗯️', '💭', '💤', '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+        '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦵',
+        '🦿', '🦶', '👣', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄', '🫦', '👶', '🧒', '👦', '👧',
+        '🧑', '👱', '👨', '🧔', '🧔‍♂️', '🧔‍♀️', '👩', '🧓', '👴', '👵', '🙍', '🙍‍♂️', '🙍‍♀️', '🙎', '🙎‍♂️', '🙎‍♀️', '🙅', '🙅‍♂️',
+        '🙅‍♀️', '🙆', '🙆‍♂️', '🙆‍♀️', '💁', '💁‍♂️', '💁‍♀️', '🙋', '🙋‍♂️', '🙋‍♀️', '🧏', '🧏‍♂️', '🧏‍♀️', '🙇', '🙇‍♂️', '🙇‍♀️',
+        '🤦', '🤦‍♂️', '🤦‍♀️', '🤷', '🤷‍♂️', '🤷‍♀️', '🧑‍⚕️', '👨‍⚕️', '👩‍⚕️', '🧑‍🎓', '👨‍🎓', '👩‍🎓', '🧑‍🏫', '👨‍🏫', '👩‍🏫', '🧑‍⚖️',
+        '👨‍⚖️', '👩‍⚖️', '🧑‍🌾', '👨‍🌾', '👩‍🌾', '🧑‍🍳', '👨‍🍳', '👩‍🍳', '🧑‍🔧', '👨‍🔧', '👩‍🔧', '🧑‍🏭', '👨‍🏭', '👩‍🏭', '🧑‍💼', '👨‍💼',
+        '👩‍💼', '🧑‍🔬', '👨‍🔬', '👩‍🔬', '🧑‍💻', '👨‍💻', '👩‍💻', '🧑‍🎤', '👨‍🎤', '👩‍🎤', '🧑‍🎨', '👨‍🎨', '👩‍🎨', '🧑‍✈️', '👨‍✈️', '👩‍✈️',
+        '🧑‍🚀', '👨‍🚀', '👩‍🚀', '🧑‍🚒', '👨‍🚒', '👩‍🚒', '👮', '👮‍♂️', '👮‍♀️', '🕵️', '🕵️‍♂️', '🕵️‍♀️', '💂', '💂‍♂️', '💂‍♀️', '👷', '👷‍♂️',
+        '👷‍♀️', '🤴', '👸', '👳', '👳‍♂️', '👳‍♀️', '👲', '🧕', '🤵', '🤵‍♂️', '🤵‍♀️', '👰', '👰‍♂️', '👰‍♀️', '🤰', '🤱', '👩‍🍼', '👨‍🍼', '🧑‍🍼',
+        '👼', '🎅', '🤶', '🧑‍🎄', '🦸', '🦸‍♂️', '🦸‍♀️', '🦹', '🦹‍♂️', '🦹‍♀️', '🧙', '🧙‍♂️', '🧙‍♀️', '🧚', '🧚‍♂️', '🧚‍♀️', '🧛', '🧛‍♂️',
+        '🧛‍♀️', '🧜', '🧜‍♂️', '🧜‍♀️', '🧝', '🧝‍♂️', '🧝‍♀️', '🧞', '🧞‍♂️', '🧞‍♀️', '🧟', '🧟‍♂️', '🧟‍♀️', '🧌', '💆', '💆‍♂️', '💆‍♀️', '💇',
+        '💇‍♂️', '💇‍♀️', '🚶', '🚶‍♂️', '🚶‍♀️', '🧍', '🧍‍♂️', '🧍‍♀️', '🧎', '🧎‍♂️', '🧎‍♀️', '🦯', '🦼', '🦽', '🏃', '🏃‍♂️', '🏃‍♀️', '💃',
+        '🕺', '🕴️', '👯', '👯‍♂️', '👯‍♀️', '🧖', '🧖‍♂️', '🧖‍♀️', '🧘', '🧑‍🤝‍🧑', '👭', '👫', '👬', '💏', '👩‍❤️‍💋‍👨'
+    ];
+
+            let emojiHtml = '';
+            emojis.forEach(emoji => {
+                emojiHtml += `<button class="emoji-button" onclick="addEmojiToInputCode('${emoji}')">${emoji}</button>`;
+            });
+
+            Swal.fire({
+                title: '选择一个 Emoji',
+                html: `<div style="display: flex; flex-wrap: wrap; gap: 8.4px;">${emojiHtml}</div>`,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: '关闭',
+            });
+        }
+
+        function addEmojiToInputCode(emoji) {
+            const input = document.getElementById('message-input-code');
+            input.value += emoji;
+            Swal.close(); // 关闭 Emoji 选择器
+        }
     </script>
+        <style>
+        .emoji-button {
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+        }
+    
+        .emoji-button:hover {
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
 	<script src="{{ url_for('static', filename='sweetalert2.all.min.js') }}"></script>
 <script src="{{ url_for('static', filename='prism.js') }}"></script>
 
