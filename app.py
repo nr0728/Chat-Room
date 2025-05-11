@@ -413,7 +413,7 @@ def login():
     username = bleach.clean(username, tags=[], attributes={})
 
     if username in users and users[username] == hashed_password:
-
+        # 设置会话
         session['captcha'] = str(random.randint(1, 1145141919810))
 
         # 如果用户启用了 2FA，则需要验证 2FA
