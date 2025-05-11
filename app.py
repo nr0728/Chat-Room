@@ -192,13 +192,8 @@ def send_message():
         return jsonify({'status': 'FAIL', 'message': '用户不存在'})
 
     cleaned_message = message
-    
-    if len(cleaned_message) == 0:
-        return jsonify({'status': 'FAIL', 'message': '消息不能为空'})
-    
     if len(cleaned_message) > 100 and username not in admin_list:
         return jsonify({'status': 'FAIL', 'message': '消息长度需小于 100 字符'})
-    
     if username not in admin_list:
         cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
         if '\u06ed' in cleaned_message or '\u0e49' in cleaned_message or '\u0e47' in cleaned_message:
@@ -262,13 +257,8 @@ def send_code():
         return jsonify({'status': 'FAIL', 'message': '用户不存在'})
 
     cleaned_message = message
-
-    if len(cleaned_message) == 0:
-        return jsonify({'status': 'FAIL', 'message': '代码不能为空'})
-    
     if len(cleaned_message) > 10240 and username not in admin_list:
         return jsonify({'status': 'FAIL', 'message': '代码长度需小于 10KB'})
-    
     if username not in admin_list:
         cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
         if '\u06ed' in cleaned_message or '\u0e49' in cleaned_message or '\u0e47' in cleaned_message:
