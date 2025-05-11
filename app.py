@@ -179,6 +179,22 @@ def user_status():
         username = '<strong><font color="#e74c3c" size="4">' + username + ' </font><button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
     return jsonify({'status': 'OK', 'message': username, 'is_2fa_enabled': is_2fa_enabled})
 
+@app.route('/user_status_', methods=['POST'])
+def user_status_():
+    load_users()
+    load_2fa_keys()
+    print("fetching user status")
+    username = request.form.get('username')
+    print("fetching user status: get")
+    print(_2fa_keys)
+    print(username)
+    if not username:
+        return jsonify({'status': 'FAIL', 'message': 'login required'})
+    is_2fa_enabled = username in _2fa_keys
+    if username in admin_list:
+        username = '<strong><font color="#e74c3c" size="4">' + username + ' </font><button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
+    return jsonify({'status': 'OK', 'message': username, 'is_2fa_enabled': is_2fa_enabled})
+
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
@@ -386,6 +402,7 @@ def register_admin(username, password):
 
 @app.route('/login', methods=['POST'])
 def login():
+    # 获取用户输入的用户名、密码和验证码
     username = request.form['username']
     password = request.form['password']
     captcha = request.form['captcha']
@@ -397,13 +414,20 @@ def login():
     username = bleach.clean(username, tags=[], attributes={})
 
     if username in users and users[username] == hashed_password:
-        session['username'] = username
+        # 设置会话
         session['captcha'] = str(random.randint(1, 1145141919810))
 
         # 如果用户启用了 2FA，则需要验证 2FA
         if username in _2fa_keys:
-            session['2fa_verified'] = False
-            return jsonify({'status': '2FA_REQUIRED', 'message': '需要进行 2FA 验证'})
+            code = request.form.get('code')
+            if not code:
+                return jsonify({'status': 'FAIL', 'message': '需要提供 2FA 验证码'})
+            totp = pyotp.TOTP(_2fa_keys[username])
+            if not totp.verify(code):
+                return jsonify({'status': 'FAIL', 'message': '2FA 验证失败'})
+        
+        # 设置会话
+        session['username'] = username
 
         return jsonify({'status': 'OK'})
     else:
