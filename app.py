@@ -338,9 +338,22 @@ def register():
     username = request.form['username']
     password = request.form['password']
     captcha = request.form['captcha']
+    
+    char_list=['a','b','c','d','e','f','g',
+               'h','i','j','k','l','m','n',
+               'o','p','q','r','s','t','u',
+               'v','w','x','y','z','A','B',
+               'C','D','E','F','G','H','I',
+               'J','K','L','M','N','O','P',
+               'Q','R','S','T','U','V','W',
+               'X','Y','Z','1','2','3','4',
+               '5','6','7','8','9','0','_',
+               '-']
+    
+    for i in username:
+        if not i in char_list:
+            return jsonify({'status': 'FAIL', 'message': '用户名只能包含字母、数字、下划线和连字符'})
 
-    if ' ' in username or '\t' in username or '\n' in username or '\u202e' in username or '\u2588' in username or '\u206a' in username or '\u200c' in username or '\u200b' in username:
-        return jsonify({'status': 'FAIL', 'message': '用户名不能含有不可见字符（空格等）'})
 
     if captcha != session.get('captcha'):
         return jsonify({'status': 'FAIL', 'message': '验证码错误'})
