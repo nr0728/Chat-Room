@@ -52,7 +52,7 @@
         </div>
         <div id="input-container">
     <input type="text" id="message-input" placeholder="输入你的消息…" style="height:60px;" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');">
-    <!-- &nbsp;&nbsp;
+    &nbsp;&nbsp;
     <button onclick="startVoiceInput()" style="height:60px;padding:10px;">🎤 语音输入</button>
     &nbsp;&nbsp;
     <select id="language-selector" style="height:60px;background-color: #8CC269;">
@@ -68,7 +68,7 @@
     <option value="ru-RU">Русский</option>
     <option value="ar-SA">العربية</option>
     <option value="hi-IN">हिन्दी</option>
-</select> -->
+</select>
     &nbsp;&nbsp;
     <button onclick="openEmojiPicker()" style="height:60px;padding:10px;">😀 插入 Emoji 表情包</button>
     &nbsp;&nbsp;
@@ -966,47 +966,47 @@ function register() {
         }
     });
 }
-//         function startVoiceInput() {
-        //     if (!('webkitSpeechRecognition' in window)) {
-        //         Swal.fire({
-        //             title: '错误',
-        //             text: '您的浏览器不支持语音输入功能。',
-        //             icon: 'error',
-        //         });
-        //         return;
-        //     }
+        function startVoiceInput() {
+            if (!('webkitSpeechRecognition' in window)) {
+                Swal.fire({
+                    title: '错误',
+                    text: '您的浏览器不支持语音输入功能。',
+                    icon: 'error',
+                });
+                return;
+            }
         
-        //     const recognition = new webkitSpeechRecognition();
-        //     const selectedLanguage = document.getElementById('language-selector').value; // 获取用户选择的语言
-        //     recognition.lang = selectedLanguage; // 设置语言
-        //     recognition.interimResults = false;
-        //     recognition.maxAlternatives = 1;
+            const recognition = new webkitSpeechRecognition();
+            const selectedLanguage = document.getElementById('language-selector').value; // 获取用户选择的语言
+            recognition.lang = selectedLanguage; // 设置语言
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
         
-        //     Swal.fire({
-        //         title: '正在监听...',
-        //         html: '请开始说话...',
-        //         allowOutsideClick: false,
-        //         showCancelButton: true,
-        //         cancelButtonText: '取消',
-        //         didOpen: () => {
-        //             recognition.start();
-        //         },
-        //     });
+            Swal.fire({
+                title: '正在监听...',
+                html: '请开始说话...',
+                allowOutsideClick: false,
+                showCancelButton: true,
+                cancelButtonText: '取消',
+                didOpen: () => {
+                    recognition.start();
+                },
+            });
         
-        //     recognition.onresult = (event) => {
-        //         const transcript = event.results[0][0].transcript;
-        //         document.getElementById('message-input').value += transcript;
-        //         Swal.close();
-        //     };
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('message-input').value += transcript;
+                Swal.close();
+            };
         
-        //     recognition.onerror = (event) => {
-        //         Swal.fire({
-        //             title: '错误',
-        //             text: '语音识别失败，请重试。',
-        //             icon: 'error',
-        //         });
-        //     };
-        // }
+            recognition.onerror = (event) => {
+                Swal.fire({
+                    title: '错误',
+                    text: '语音识别失败，请重试。',
+                    icon: 'error',
+                });
+            };
+        }
         function openEmojiPicker() {
     const emojis = [
         '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤔',
