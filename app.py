@@ -12,6 +12,7 @@ import getpass
 import pyotp
 import qrcode
 import base64
+import user_agents
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # 用于会话管理
@@ -42,6 +43,11 @@ admin_list = ['your-admin-username'] # 请自定义
 # 允许的 HTML 标签和属性白名单
 allowed_tags = ['p', 'br']
 allowed_attrs = {'*': ['style'], 'p': ['style']}
+
+def PC_check(request):
+    user_agent = request.headers.get('User-Agent')
+    # return False # DEBUG
+    return user_agents.parse(user_agent).is_pc
 
 def shuffle_string(s):
     s_list = list(s)
@@ -160,7 +166,9 @@ def generate_captcha_image(size=(120, 60), characterNumber=5, bgcolor=getColor2(
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if PC_check(request):
+        return render_template('index.html')
+    return render_template('m_index.html')
 
 
 @app.route('/user_status', methods=['POST'])
@@ -469,7 +477,9 @@ def captcha():
 def panel():
     if 'username' not in session or session['username'] not in admin_list:
         return "Access denied", 403
-    return render_template('panel.html', chat_history=chat_history)
+    if PC_check(request):
+        return render_template('panel.html', chat_history=chat_history)
+    return render_template('m_panel.html', chat_history=chat_history)
 
 
 @app.route('/delete_message', methods=['POST'])

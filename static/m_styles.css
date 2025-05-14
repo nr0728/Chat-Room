@@ -1,7 +1,7 @@
-button.edit,
-button.edit-username,
-button.delete,
-button.edit-identifier {
+button.edit:not(.swal2-styled),
+button.edit-username:not(.swal2-styled),
+button.delete:not(.swal2-styled),
+button.edit-identifier:not(.swal2-styled) {
     background-color: #8CC269;
     color: white;
     border: none;
@@ -12,26 +12,21 @@ button.edit-identifier {
     font-size: 14px;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
     box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+    width: unset;
 }
 
-button.edit:hover,
-button.edit-username:hover,
-button.delete:hover,
-button.edit-identifier:hover {
+
+
+button.edit:not(.swal2-styled):hover,
+button.edit-username:not(.swal2-styled):hover,
+button.delete:not(.swal2-styled):hover,
+button.edit-identifier:not(.swal2-styled):hover {
     background-color: #35b6ad;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 }
 
+
 #panel-container {
-    display: -webkit-flex;
-    /* Safari */
-    display: flex;
-    -webkit-flex-direction: column;
-    /* Safari */
-    flex-direction: column;
-    -webkit-align-items: center;
-    /* Safari */
-    align-items: center;
     width: 1000px;
     margin: 20px auto;
     background-color: #fff;
@@ -42,14 +37,8 @@ button.edit-identifier:hover {
 }
 
 .panel-message {
-    display: -webkit-flex;
-    /* Safari */
     display: flex;
-    -webkit-justify-content: space-between;
-    /* Safari */
     justify-content: space-between;
-    -webkit-align-items: center;
-    /* Safari */
     align-items: center;
     margin-bottom: 10px;
     padding: 10px;
@@ -97,7 +86,7 @@ h1 {
     right: 20px;
 }
 
-#nav-buttons button {
+#nav-buttons button:not(.swal2-styled) {
     margin-left: 10px;
     padding: 10px 20px;
     background-color: #8CC269;
@@ -110,7 +99,7 @@ h1 {
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 }
 
-#nav-buttons button:hover {
+#nav-buttons button:not(.swal2-styled):hover {
     background-color: #35b6ad;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5);
     color: #dbf5f3;
@@ -144,18 +133,33 @@ h1 {
     margin: 5px 0;
 }
 
-#input-container,
+#input-container {
+    display: -webkit-flex;
+    /* Safari */
+    display: flex;
+    -webkit-flex-direction: column;
+    /* Safari */
+    flex-direction: column;
+    -webkit-align-items: stretch;
+    /* Safari */
+    align-items: stretch;
+    width: 100%;
+}
+
 #input-container-code {
     display: -webkit-flex;
     /* Safari */
     display: flex;
-    -webkit-align-items: center;
+    -webkit-flex-direction: column;
     /* Safari */
-    align-items: center;
+    flex-direction: column;
+    -webkit-align-items: stretch;
+    /* Safari */
+    align-items: stretch;
     width: 100%;
 }
 
-input[type="text"] {
+input[type="text"]:not(.swal2-input) {
     flex: 1;
     padding: 10px;
     font-size: 16px;
@@ -163,7 +167,7 @@ input[type="text"] {
     border-radius: 4px 0 0 4px;
 }
 
-textarea {
+textarea:not(.swal2-styled) {
     flex: 1;
     padding: 10px;
     font-size: 16px;
@@ -171,7 +175,7 @@ textarea {
     border-radius: 4px 0 0 4px;
 }
 
-button {
+button:not(.swal2-styled) {
     background-color: #8CC269;
     color: white;
     border: none;
@@ -184,10 +188,18 @@ button {
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
 }
 
-button:hover {
+button:not(.swal2-styled):hover {
     background-color: #35b6ad;
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5);
     color: #dbf5f3;
+}
+
+button:not(.swal2-styled),
+input[type="text"]:not(.swal2-input),
+textarea:not(.swal2-input) {
+    display: inline-block;
+    vertical-align: middle;
+    white-space: nowrap;
 }
 
 .notification {
@@ -242,15 +254,15 @@ button:hover {
     font-weight: bold;
 }
 
-.close:hover,
+close:hover,
 .close:focus {
     color: black;
     text-decoration: none;
     cursor: pointer;
 }
 
-input[type="password"],
-input[type="text"] {
+input[type="password"]:not(swal2-input),
+input[type="text"]:not(swal2-input) {
     width: 100%;
     padding: 12px 20px;
     margin: 8px 0;
@@ -258,4 +270,49 @@ input[type="text"] {
     border: 1px solid #ccc;
     border-radius: 4px;
     box-sizing: border-box;
+}
+
+#panel-container,
+#chat-container {
+    width: 100%;
+    padding: 10px;
+}
+
+#chat-history {
+    width: 100%;
+    max-height: 400px;
+}
+
+#input-container,
+#input-container-code {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+input[type="text"]:not(.swal2-input),
+textarea:not(.swal2-styled),
+button:not(.swal2-styled) {
+    width: 25%;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+
+#nav-buttons {
+    position: static;
+    text-align: center;
+    margin-top: 10px;
+}
+
+#nav-buttons button:not(.swal2-styled) {
+    margin: 5px;
+    width: auto;
+}
+
+h1 {
+    font-size: 20px;
+    padding: 10px 0;
+}
+
+button.admin:not(.swal2-styled) {
+    width: unset;
 }

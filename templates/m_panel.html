@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制面板</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='m_styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='sweetalert2.min.css') }}">
+    <script src="{{ url_for('static', filename='sweetalert2.all.min.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='prism.css') }}">
+
+</head>
+
+<body>
+    <div id="panel-container">
+        <h1>管理员控制面板</h1>
+        <div id="panel-messages">
+            {% for message in chat_history %}
+            <div class="panel-message" id="message-{{ message.timestamp|safe }}">
+                <p><strong id="username-{{ message.timestamp|safe }}">{{ message.username|safe }}</strong>:</p>
+                <p id="content-{{ message.timestamp|safe }}">{{ message.message|safe }}</p>
+                <p id="timestamp-{{ message.timestamp|safe }}">{{ message.timestamp|safe }}</p>
+                <button class="edit" onclick="editMessage('{{ message.timestamp }}')">编辑</button>
+                <button class="edit-username" onclick="editUsername('{{ message.timestamp }}')">修改用户名</button>
+                <button class="edit-identifier" onclick="editIdentifier('{{ message.timestamp }}')">修改标识符</button>
+                <button class="delete" onclick="deleteMessage('{{ message.timestamp }}')">删除</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function showNotification(message, status, duration = 500) {
+            let timerInterval;
+            Swal.fire({
+                title: message,
+                icon: status === 'ok' ? 'success' : 'error',
+                html: '系统消息，将在 <b></b> 毫秒后自动关闭。',
+                timer: duration,
+                timerProgressBar: true,
+                didOpen: () => {
+                    const timer = Swal.getHtmlContainer().querySelector('b');
+                    timerInterval = setInterval(() => {
+                        timer.textContent = Swal.getTimerLeft();
+                    }, 10);
+                },
+                willClose: () => {
+                    clearInterval(timerInterval);
+                }
+            });
+        }
+
+        function deleteMessage(timestamp) {
+            fetch('/delete_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `timestamp=${encodeURIComponent(timestamp)}`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        showNotification('删除成功', 'ok');
+                        document.getElementById(`message-${timestamp}`).remove();
+                    } else {
+                        showNotification(data.message, 'fail');
+                    }
+                });
+        }
+
+        function editMessage(timestamp) {
+            const oldMessage = document.getElementById(`content-${timestamp}`).innerHTML;
+            Swal.fire({
+                title: '编辑消息',
+                input: 'textarea',
+                inputValue: oldMessage,
+                showCancelButton: true,
+                confirmButtonText: '保存',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newMessage = result.value;
+                    fetch('/edit_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `timestamp=${encodeURIComponent(timestamp)}&new_message=${encodeURIComponent(newMessage)}`
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'OK') {
+                                showNotification('编辑成功', 'ok');
+                                document.getElementById(`content-${timestamp}`).innerHTML = newMessage;
+                            } else {
+                                showNotification(data.message, 'fail');
+                            }
+                        });
+                }
+            });
+        }
+
+        function editUsername(timestamp) {
+            const oldUsername = document.getElementById(`username-${timestamp}`).innerHTML;
+            Swal.fire({
+                title: '修改用户名',
+                input: 'textarea',
+                inputValue: oldUsername,
+                showCancelButton: true,
+                confirmButtonText: '保存',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newUsername = result.value;
+                    fetch('/edit_username', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `timestamp=${encodeURIComponent(timestamp)}&new_username=${encodeURIComponent(newUsername)}`
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'OK') {
+                                showNotification('用户名修改成功', 'ok');
+                                document.getElementById(`username-${timestamp}`).innerHTML = newUsername;
+                            } else {
+                                showNotification(data.message, 'fail');
+                            }
+                        });
+                }
+            });
+        }
+
+        function editIdentifier(oldTimestamp) {
+            const oldElement = document.getElementById(`timestamp-${oldTimestamp}`);
+            Swal.fire({
+                title: '修改标识符',
+                input: 'textarea',
+                inputValue: oldTimestamp,
+                showCancelButton: true,
+                confirmButtonText: '保存',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newTimestamp = result.value;
+                    fetch('/edit_timestamp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `old_timestamp=${encodeURIComponent(oldTimestamp)}&new_timestamp=${encodeURIComponent(newTimestamp)}`
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'OK') {
+                                showNotification('标识符修改成功', 'ok');
+                                oldElement.id = `timestamp-${newTimestamp}`;
+                                document.getElementById(`message-${oldTimestamp}`).id = `message-${newTimestamp}`;
+                                document.getElementById(`username-${oldTimestamp}`).id = `username-${newTimestamp}`;
+                                document.getElementById(`content-${oldTimestamp}`).id = `content-${newTimestamp}`;
+                                oldElement.innerHTML = newTimestamp;
+                            } else {
+                                showNotification(data.message, 'fail');
+                            }
+                        });
+                }
+            });
+        }
+    </script>
+    <script src="{{ url_for('static', filename='prism.js') }}"></script>
+</body>
+
+</html>
