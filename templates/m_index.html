@@ -14,6 +14,7 @@
             font-size: 16px;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+            width: 25%;
         }
     </style>
     </script>
@@ -24,6 +25,7 @@
             border: none;
             cursor: pointer;
             padding: 5px;
+            width: unset;
         }
 
         .emoji-button:hover {
@@ -34,7 +36,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>聊天室</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='m_styles.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='prism.css') }}">
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
     <link href="{{ url_for('static', filename='sweetalert2.all.min.js') }}" rel="stylesheet">
@@ -49,42 +51,44 @@
         <button onclick="showLoginForm()" id="login-button">登录</button>
         <button onclick="window.location.href='/panel'" id="panel-button" style="display:none;">控制面板</button>
     </div>
-
     <div id="chat-container">
         <div id="chat-history">
         </div>
         <div id="input-container">
-            <input type="text" id="message-input" placeholder="输入你的消息…" style="height:60px;" autocomplete="off" readonly
-                onfocus="this.removeAttribute('readonly');">
-            &nbsp;&nbsp;
-            <button onclick="startVoiceInput()" style="height:60px;padding:10px;">🎤 语音输入</button>
-            &nbsp;&nbsp;
-            <select id="language-selector" style="height:60px;background-color: #8CC269;">
-                <option value="zh-CN">中文</option>
-                <option value="en-US">English</option>
-                <option value="es-ES">Español</option>
-                <option value="fr-FR">Français</option>
-                <option value="de-DE">Deutsch</option>
-                <option value="ja-JP">日本語</option>
-                <option value="ko-KR">한국어</option>
-                <option value="it-IT">Italiano</option>
-                <option value="pt-BR">Português (Brasil)</option>
-                <option value="ru-RU">Русский</option>
-                <option value="ar-SA">العربية</option>
-                <option value="hi-IN">हिन्दी</option>
-            </select>
-            &nbsp;&nbsp;
-            <button onclick="openEmojiPicker()" style="height:60px;padding:10px;">😀 插入 Emoji 表情包</button>
-            &nbsp;&nbsp;
-            <button onclick="sendMessage()" style="height:60px;">📩 发送消息</button>
+            <div style="display: flex; align-items: center; gap: 10px; flex-direction: column; align-items: stretch;">
+                <input type="text" id="message-input" placeholder="输入你的消息…"
+                    style="height:90px; margin: 0 auto; display: block;width: 80%;" autocomplete="off" readonly
+                    onfocus="this.removeAttribute('readonly');">
+                <div style="display: flex; align-items: center; gap: 10px;margin: 0 auto;">
+                    <button onclick="startVoiceInput()" style="height:60px;padding:10px;width: 30%;">🎤 语音输入</button>
+                    <select id="language-selector" style="width: 30%;height:60px;background-color: #8CC269;">
+                        <option value="zh-CN">中文</option>
+                        <option value="en-US">English</option>
+                        <option value="es-ES">Español</option>
+                        <option value="fr-FR">Français</option>
+                        <option value="de-DE">Deutsch</option>
+                        <option value="ja-JP">日本語</option>
+                        <option value="ko-KR">한국어</option>
+                        <option value="it-IT">Italiano</option>
+                        <option value="pt-BR">Português (Brasil)</option>
+                        <option value="ru-RU">Русский</option>
+                        <option value="ar-SA">العربية</option>
+                        <option value="hi-IN">हिन्दी</option>
+                    </select>
+                    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;width: 30%;">😀 插入 Emoji
+                        表情包</button>
+                    <button onclick="sendMessage()" style="height:60px;width: 30%;">📩 发送消息</button>
+                </div>
+            </div>
         </div>
-        <div id="input-container-code">
+        <div id="input-container-code" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
             <textarea type="text" id="message-input-code" class="swal-content__textarea" placeholder=" 输入你的代码…" rows="2"
-                autocomplete="off"></textarea>
-            &nbsp;&nbsp;
-            <button onclick="openEmojiPickerCode()" style=padding:10px;">😀 插入 Emoji 表情包</button>
-            &nbsp;&nbsp;
-            <button onclick="sendCode()">📩 发送代码</button>
+                autocomplete="off" style="flex:1;width: 80%;"></textarea>
+            <div style="display: flex; align-items: center; gap: 10px;margin: 0 auto;">
+                <button onclick="openEmojiPickerCode()" style="padding:10px; height: 60px;width: 70%;">😀 插入 Emoji
+                    表情包</button>
+                <button onclick="sendCode()" style="height: 60px;width: 70%;">📩 发送代码</button>
+            </div>
         </div>
     </div>
 
@@ -92,10 +96,10 @@
         <div class="modal-content">
             <span class="close" onclick="closeRegisterForm()">&times;</span>
             <h2>注册</h2>
-            <input type="text" id="register-username" placeholder="用户名">
-            <input type="password" id="register-password" placeholder="密码">
-            <input type="password" id="register-confirm-password" placeholder="确认密码">
-            <input type="text" id="register-captcha" placeholder="验证码">
+            <input type="text" id="register-username" placeholder="用户名" style="width: 100%;">
+            <input type="password" id="register-password" placeholder="密码" style="width: 100%;">
+            <input type="password" id="register-confirm-password" placeholder="确认密码" style="width: 50%;">
+            <input type="text" id="register-captcha" placeholder="验证码" style="width: 50%;">
             <img id="captcha-image-reg" src="#" alt="验证码" onclick="reloadCode(2);">
             <p>注：请在注册后登录。</p>
             <button onclick="register()">注册</button>
@@ -106,10 +110,10 @@
         <div class="modal-content">
             <span class="close" onclick="closeLoginForm()">&times;</span>
             <h2>登录</h2>
-            <input type="text" id="login-username" placeholder="用户名">
-            <input type="password" id="login-password" placeholder="密码">
-            <input type="text" id="login-captcha" placeholder="验证码">
-            <img id="captcha-image-log" src="#" alt="验证码" onclick="reloadCode(1);">
+            <input type="text" id="login-username" placeholder="用户名" style="width: 100%;">
+            <input type="password" id="login-password" placeholder="密码" style="width: 100%;">
+            <input type="text" id="login-captcha" placeholder="验证码" style="width: 50%;">
+            <img id="captcha-image-log" src="#" alt="验证码" onclick="reloadCode(1);" style="width: 45%">
             <button onclick="login()">登录</button>
             <button onclick="loginWithLoginkey()">使用 Loginkey 登录</button>
         </div>
@@ -1020,7 +1024,7 @@
 
             let emojiHtml = '';
             emojis.forEach(emoji => {
-                emojiHtml += `<button class="emoji-button" onclick="addEmojiToInput('${emoji}')">${emoji}</button>`;
+                emojiHtml += `<button class="emoji-button" style="justify-content: center;width: 9%;margin: 0 auto;padding: 10px;" onclick="addEmojiToInput('${emoji}')">${emoji}</button>`;
             });
 
             Swal.fire({
@@ -1046,7 +1050,7 @@
 
             let emojiHtml = '';
             emojis.forEach(emoji => {
-                emojiHtml += `<button class="emoji-button" onclick="addEmojiToCode('${emoji}')">${emoji}</button>`;
+                emojiHtml += `<button class="emoji-button" style="justify-content: center;width: 9%;margin: 0 auto;padding: 10px;" onclick="addEmojiToInput('${emoji}')">${emoji}</button>`;
             });
 
             Swal.fire({

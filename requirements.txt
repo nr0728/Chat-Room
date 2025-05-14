@@ -5,3 +5,4 @@ flask-socketio
 requests
 pyotp
 qrcode
+user_agents
