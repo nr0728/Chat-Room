@@ -96,13 +96,13 @@
         <div class="modal-content">
             <span class="close" onclick="closeRegisterForm()">&times;</span>
             <h2>注册</h2>
-            <input type="text" id="register-username" placeholder="用户名" style="width: 100%;">
-            <input type="password" id="register-password" placeholder="密码" style="width: 100%;">
-            <input type="password" id="register-confirm-password" placeholder="确认密码" style="width: 50%;">
-            <input type="text" id="register-captcha" placeholder="验证码" style="width: 50%;">
+            <input type="text" id="register-username" placeholder="用户名" style="width: 100%;" class="swal2-input">
+            <input type="password" id="register-password" placeholder="密码" style="width: 100%;" class="swal2-input">
+            <input type="password" id="register-confirm-password" placeholder="确认密码" style="width: 100%;" class="swal2-input">
+            <input type="text" id="register-captcha" placeholder="验证码" style="width: 100%;" class="swal2-input">
             <img id="captcha-image-reg" src="#" alt="验证码" onclick="reloadCode(2);">
             <p>注：请在注册后登录。</p>
-            <button onclick="register()">注册</button>
+            <button onclick="register()" style="width: unset;">注册</button>
         </div>
     </div>
 
@@ -110,12 +110,14 @@
         <div class="modal-content">
             <span class="close" onclick="closeLoginForm()">&times;</span>
             <h2>登录</h2>
-            <input type="text" id="login-username" placeholder="用户名" style="width: 100%;">
-            <input type="password" id="login-password" placeholder="密码" style="width: 100%;">
-            <input type="text" id="login-captcha" placeholder="验证码" style="width: 50%;">
-            <img id="captcha-image-log" src="#" alt="验证码" onclick="reloadCode(1);" style="width: 45%">
-            <button onclick="login()">登录</button>
-            <button onclick="loginWithLoginkey()">使用 Loginkey 登录</button>
+            <input type="text" id="login-username" placeholder="用户名" style="width: 100%;" class="swal2-input">
+            <input type="password" id="login-password" placeholder="密码" style="width: 100%;" class="swal2-input">
+            <input type="text" id="login-captcha" placeholder="验证码" style="width: 100%;" class="swal2-input">
+            <img id="captcha-image-log" src="#" alt="验证码" onclick="reloadCode(1);">
+            <br />
+            <button onclick="login()" style="width: unset;">登录</button>
+            <br />
+            <button onclick="loginWithLoginkey()" style="width: unset;">使用 Loginkey 登录</button>
         </div>
     </div>
 

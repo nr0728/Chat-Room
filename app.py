@@ -48,7 +48,7 @@ allowed_attrs = {"*": ["style"], "p": ["style"]}
 
 def PC_check(request):
     user_agent = request.headers.get("User-Agent")
-    # return False # DEBUG
+    return False # DEBUG
     return user_agents.parse(user_agent).is_pc
 
 
