@@ -131,13 +131,12 @@
                         <option value="ja-JP">日本語</option>
                         <option value="ko-KR">한국어</option>
                         <option value="it-IT">Italiano</option>
-                        <option value="pt-BR">Português (Brasil)</option>
+                        <option value="pt-BR">Português</option>
                         <option value="ru-RU">Русский</option>
                         <option value="ar-SA">العربية</option>
                         <option value="hi-IN">हिन्दी</option>
                     </select>
-                    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;width: 30%;">😀 插入 Emoji
-                        表情包</button>
+                    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;width: 30%;">😀 插入 Emoji 表情包</button>
                     <button onclick="sendMessage()" style="height:60px;width: 30%;">📩 发送消息</button>
                 </div>
             </div>
@@ -146,8 +145,6 @@
             <textarea type="text" id="message-input-code" class="swal-content__textarea" placeholder=" 输入你的代码…" rows="2"
                 autocomplete="off" style="flex:1;width: 80%;"></textarea>
             <div style="display: flex; align-items: center; gap: 10px;margin: 0 auto;">
-                <button onclick="openEmojiPickerCode()" style="padding:10px; height: 60px;width: 70%;">😀 插入 Emoji
-                    表情包</button>
                 <button onclick="sendCode()" style="height: 60px;width: 70%;">📩 发送代码</button>
             </div>
         </div>
@@ -696,10 +693,6 @@
                 .then(data => {
                     const chatHistoryDiv = document.getElementById('chat-history');
                     chatHistoryDiv.innerHTML = '';
-                    const p = document.createElement('p');
-                    p.style.textAlign = 'center';
-                    p.innerHTML = `<strong><font size="5">我们的新域名：<a href="${window.location.href}">${window.location.href}</a><br>Our New Domain: <a href="${window.location.href}">${window.location.href}</a></font></strong>`;
-                    chatHistoryDiv.appendChild(p);
                     data.reverse().forEach(entry => {
                         appendMessageToChatHistory(entry.timestamp, entry.username, entry.message);
                     });
