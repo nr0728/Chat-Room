@@ -747,8 +747,10 @@ if __name__ == "__main__":
     load_loginkeys()
     for admin in admin_list:
         if admin not in users:
-            prompt = f"The administrator account '{admin}' is not currently registered. Please enter the password for this user to proceed with automatic registration. To skip this step, simply press Enter:"
+            prompt = f"The administrator account '{admin}' is not currently registered. Please enter the password for this user to proceed with automatic registration. To skip this step, simply press Enter: "
             admin_password = getpass.getpass(prompt)
             if admin_password:
                 register_admin(admin, admin_password)
+                print("Registered admin account: ", admin)
+    print("Running on port 1145")
     socketio.run(app, host="0.0.0.0", port=1145)
