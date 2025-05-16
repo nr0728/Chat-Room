@@ -9,11 +9,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='sweetalert2.min.css') }}">
     <script src="{{ url_for('static', filename='sweetalert2.all.min.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='prism.css') }}">
-
 </head>
 
 <body>
-    <div id="panel-container">
+    <div id="panel-container" style="width: 100%;max-width: unset;">
         <h1>管理员控制面板</h1>
         <div id="panel-messages">
             {% for message in chat_history %}

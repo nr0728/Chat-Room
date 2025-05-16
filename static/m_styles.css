@@ -167,7 +167,7 @@ input[type="text"]:not(.swal2-input) {
     border-radius: 4px 0 0 4px;
 }
 
-textarea:not(.swal2-styled) {
+textarea:not(.swal2-textarea) {
     flex: 1;
     padding: 10px;
     font-size: 16px;
@@ -196,7 +196,7 @@ button:not(.swal2-styled):hover {
 
 button:not(.swal2-styled),
 input[type="text"]:not(.swal2-input),
-textarea:not(.swal2-input) {
+textarea:not(.swal2-textarea) {
     display: inline-block;
     vertical-align: middle;
     white-space: nowrap;
@@ -290,7 +290,7 @@ input[type="text"]:not(swal2-input) {
 }
 
 input[type="text"]:not(.swal2-input),
-textarea:not(.swal2-styled),
+textarea:not(.swal2-textarea),
 button:not(.swal2-styled) {
     width: 25%;
     margin: 5px 0;

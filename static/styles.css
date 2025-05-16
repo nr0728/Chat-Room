@@ -14,6 +14,14 @@ button.edit-identifier {
     box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
 }
 
+/* 修正按钮圆角与主按钮一致 */
+button.edit,
+button.edit-username,
+button.delete,
+button.edit-identifier {
+    border-radius: 4px;
+}
+
 button.edit:hover,
 button.edit-username:hover,
 button.delete:hover,
@@ -23,42 +31,46 @@ button.edit-identifier:hover {
 }
 
 #panel-container {
-    display: -webkit-flex;
-    /* Safari */
     display: flex;
-    -webkit-flex-direction: column;
-    /* Safari */
     flex-direction: column;
-    -webkit-align-items: center;
-    /* Safari */
     align-items: center;
-    width: 1000px;
+    width: 90%;
+    max-width: 1000px;
     margin: 20px auto;
     background-color: #fff;
     padding: 20px;
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    /* 保证宽度不会超出屏幕 */
+    min-width: 320px;
 }
 
 .panel-message {
-    display: -webkit-flex;
-    /* Safari */
     display: flex;
-    -webkit-justify-content: space-between;
-    /* Safari */
     justify-content: space-between;
-    -webkit-align-items: center;
-    /* Safari */
     align-items: center;
     margin-bottom: 10px;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+    background: none;
 }
 
+/* panel-message内的按钮靠右排列 */
+.panel-message > button,
+.panel-message > .edit,
+.panel-message > .edit-username,
+.panel-message > .edit-identifier,
+.panel-message > .delete {
+    margin-left: 5px;
+}
+
+/* panel-message内容区域自适应 */
 .panel-message p {
-    margin: 0;
+    margin: 0 10px 0 0;
     flex: 1;
+    word-break: break-all;
 }
 
 footer {
@@ -258,4 +270,66 @@ input[type="text"] {
     border: 1px solid #ccc;
     border-radius: 4px;
     box-sizing: border-box;
+    /* 只在表单输入区100%宽度，panel内不影响 */
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* 按钮悬停时轻微缩放 */
+button:hover,
+button.edit:hover,
+button.edit-username:hover,
+button.delete:hover,
+button.edit-identifier:hover,
+#nav-buttons button:hover {
+    transform: scale(1.05);
+}
+
+/* 按钮按下时按压效果 */
+button:active,
+button.edit:active,
+button.edit-username:active,
+button.delete:active,
+button.edit-identifier:active,
+#nav-buttons button:active {
+    transform: scale(0.97);
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* 输入框聚焦时高亮边框 */
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+    border-color: #8CC269;
+    outline: none;
+    box-shadow: 0 0 5px #8CC26944;
+}
+
+/* chat-history 滚动条美化 */
+#chat-history::-webkit-scrollbar {
+    width: 8px;
+    background: #f2f2f2;
+}
+
+#chat-history::-webkit-scrollbar-thumb {
+    background: #8CC269;
+    border-radius: 4px;
+}
+
+#chat-history::-webkit-scrollbar-thumb:hover {
+    background: #35b6ad;
+}
+/* panel 滚动条美化 */
+#panel-container::-webkit-scrollbar {
+    width: 8px;
+    background: #f2f2f2;
+}
+
+#panel-container::-webkit-scrollbar-thumb {
+    background: #8CC269;
+    border-radius: 4px;
+}
+
+#panel-container::-webkit-scrollbar-thumb:hover {
+    background: #35b6ad;
 }
