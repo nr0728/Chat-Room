@@ -58,11 +58,11 @@ button.edit-identifier:hover {
 }
 
 /* panel-message内的按钮靠右排列 */
-.panel-message > button,
-.panel-message > .edit,
-.panel-message > .edit-username,
-.panel-message > .edit-identifier,
-.panel-message > .delete {
+.panel-message>button,
+.panel-message>.edit,
+.panel-message>.edit-username,
+.panel-message>.edit-identifier,
+.panel-message>.delete {
     margin-left: 5px;
 }
 
@@ -319,6 +319,7 @@ textarea:focus {
 #chat-history::-webkit-scrollbar-thumb:hover {
     background: #35b6ad;
 }
+
 /* panel 滚动条美化 */
 #panel-container::-webkit-scrollbar {
     width: 8px;
@@ -331,5 +332,26 @@ textarea:focus {
 }
 
 #panel-container::-webkit-scrollbar-thumb:hover {
+    background: #35b6ad;
+}
+
+#panel-messages {
+    max-height: 600px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* panel-messages 滚动条美化（可选） */
+#panel-messages::-webkit-scrollbar {
+    width: 8px;
+    background: #f2f2f2;
+}
+
+#panel-messages::-webkit-scrollbar-thumb {
+    background: #8CC269;
+    border-radius: 4px;
+}
+
+#panel-messages::-webkit-scrollbar-thumb:hover {
     background: #35b6ad;
 }

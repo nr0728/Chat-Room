@@ -113,7 +113,7 @@
         <button onclick="window.location.href='/panel'" id="panel-button" style="display:none;">控制面板</button>
     </div>
     <div id="chat-container">
-        <div id="chat-history">
+        <div id="chat-history" style="width: 90%;">
         </div>
         <div id="input-container">
             <div style="display: flex; align-items: center; gap: 10px; flex-direction: column; align-items: stretch;">
@@ -136,7 +136,8 @@
                         <option value="ar-SA">العربية</option>
                         <option value="hi-IN">हिन्दी</option>
                     </select>
-                    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;width: 30%;">😀 插入 Emoji 表情包</button>
+                    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;width: unset;">😀 插入 Emoji
+                        表情包</button>
                     <button onclick="sendMessage()" style="height:60px;width: 30%;">📩 发送消息</button>
                 </div>
             </div>
@@ -145,7 +146,7 @@
             <textarea type="text" id="message-input-code" class="swal-content__textarea" placeholder=" 输入你的代码…" rows="2"
                 autocomplete="off" style="flex:1;width: 80%;"></textarea>
             <div style="display: flex; align-items: center; gap: 10px;margin: 0 auto;">
-                <button onclick="sendCode()" style="height: 60px;width: 70%;">📩 发送代码</button>
+                <button onclick="sendCode()" style="height: 60px;width: unset;">📩 发送代码</button>
             </div>
         </div>
     </div>

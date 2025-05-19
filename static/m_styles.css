@@ -315,3 +315,39 @@ h1 {
 button.admin:not(.swal2-styled) {
     width: unset;
 }
+
+#panel-messages {
+    max-height: 600px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* panel-messages 滚动条美化（可选） */
+#panel-messages::-webkit-scrollbar {
+    width: 8px;
+    background: #f2f2f2;
+}
+
+#panel-messages::-webkit-scrollbar-thumb {
+    background: #8CC269;
+    border-radius: 4px;
+}
+
+#panel-messages::-webkit-scrollbar-thumb:hover {
+    background: #35b6ad;
+}
+
+/* chat-history 滚动条美化 */
+#chat-history::-webkit-scrollbar {
+    width: 8px;
+    background: #f2f2f2;
+}
+
+#chat-history::-webkit-scrollbar-thumb {
+    background: #8CC269;
+    border-radius: 4px;
+}
+
+#chat-history::-webkit-scrollbar-thumb:hover {
+    background: #35b6ad;
+}
