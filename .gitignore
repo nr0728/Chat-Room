@@ -2,4 +2,5 @@ password.json
 2fa.json
 chat_history.json
 loginkeys.json
+private_messages.json
 __pycache__

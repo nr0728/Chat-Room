@@ -13,6 +13,7 @@ import pyotp
 import qrcode
 import base64
 import user_agents
+import threading
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -34,6 +35,10 @@ _2fa_keys = {}
 # 存储用户 Loginkey 的 JSON 文件路径
 USER_LOGINKEY_FILE = "loginkeys.json"
 loginkeys = {}
+
+# 私聊消息存储的 JSON 文件路径
+PRIVATE_MSG_FILE = "private_messages.json"
+private_messages_lock = threading.Lock()
 
 # 封禁的 IP 列表
 BANNED_IP = ["211.158.25.248", "122.224.219.246"]
@@ -178,6 +183,24 @@ def generate_captcha_image(size=(120, 60), characterNumber=5, bgcolor=getColor2(
     imageFinal.save(buf, format="PNG")
     buf.seek(0)
     return (buf, text)
+
+
+def get_private_key(user1, user2):
+    # 按字典序拼接，保证唯一性
+    return "|".join(sorted([user1, user2]))
+
+
+def load_private_messages():
+    try:
+        with open(PRIVATE_MSG_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def save_private_messages(data):
+    with open(PRIVATE_MSG_FILE, "w") as f:
+        json.dump(data, f)
 
 
 @app.route("/")
@@ -738,6 +761,75 @@ def add_2fa_for_user(username):
     _2fa_keys[username] = pyotp.random_base32()
     save_2fa_keys()
     return _2fa_keys[username]
+
+
+@socketio.on("join_private")
+def on_join_private(data):
+    # data: {"username": "...">
+    username = data.get("username")
+    if username:
+        # 让每个用户加入自己的私聊房间
+        from flask_socketio import join_room
+
+        join_room(f"user_{username}")
+
+
+@app.route("/send_private_message", methods=["POST"])
+def send_private_message():
+    if "username" not in session:
+        return jsonify({"status": "FAIL", "message": "需要登录"})
+    from_user = session["username"]
+    to_user = request.form.get("to_user")
+    message = request.form.get("message")
+    if not to_user or not message:
+        return jsonify({"status": "FAIL", "message": "参数缺失"})
+    if from_user == to_user:
+        return jsonify({"status": "FAIL", "message": "不能给自己发私聊"})
+    load_users()
+    if to_user not in users:
+        return jsonify({"status": "FAIL", "message": "目标用户不存在"})
+    cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
+    now = datetime.now()
+    timestamp = now.strftime('%Y-%m-%d %H:%M:%S.%f')
+    msg_obj = {
+        "from": from_user,
+        "to": to_user,
+        "message": cleaned_message,
+        "timestamp": timestamp
+    }
+    with private_messages_lock:
+        data = load_private_messages()
+        key = get_private_key(from_user, to_user)
+        if key not in data:
+            data[key] = []
+        data[key].append(msg_obj)
+        save_private_messages(data)
+    # SocketIO推送（只发给目标用户和自己）
+    for user in [from_user, to_user]:
+        socketio.emit("private_message", msg_obj, room=f"user_{user}")
+    return jsonify({"status": "OK"})
+
+@app.route("/get_private_history", methods=["POST"])
+def get_private_history():
+    if "username" not in session:
+        return jsonify({"status": "FAIL", "message": "需要登录"})
+    user1 = session["username"]
+    user2 = request.form.get("with_user")
+    if not user2:
+        return jsonify({"status": "FAIL", "message": "参数缺失"})
+    load_users()
+    if user2 not in users:
+        return jsonify({"status": "FAIL", "message": "目标用户不存在"})
+    with private_messages_lock:
+        data = load_private_messages()
+        key = get_private_key(user1, user2)
+        msgs = data.get(key, [])
+    return jsonify({"status": "OK", "messages": msgs})
+
+@app.route("/get_all_users", methods=["POST"])
+def get_all_users():
+    load_users()
+    return jsonify({"status": "OK", "users": list(users.keys())})
 
 
 if __name__ == "__main__":
