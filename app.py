@@ -796,7 +796,7 @@ def send_private_message():
         "to": to_user,
         "message": cleaned_message,
         "timestamp": timestamp,
-        "read": False  # 新增已读字段
+        "read": False,  # 新增已读字段
     }
     with private_messages_lock:
         data = load_private_messages()
