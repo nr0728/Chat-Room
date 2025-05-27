@@ -790,12 +790,12 @@ def send_private_message():
         return jsonify({"status": "FAIL", "message": "目标用户不存在"})
     cleaned_message = bleach.clean(message, tags=allowed_tags, attributes=allowed_attrs)
     now = datetime.now()
-    timestamp = now.strftime('%Y-%m-%d %H:%M:%S.%f')
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S.%f")
     msg_obj = {
         "from": from_user,
         "to": to_user,
         "message": cleaned_message,
-        "timestamp": timestamp
+        "timestamp": timestamp,
     }
     with private_messages_lock:
         data = load_private_messages()
@@ -808,6 +808,7 @@ def send_private_message():
     for user in [from_user, to_user]:
         socketio.emit("private_message", msg_obj, room=f"user_{user}")
     return jsonify({"status": "OK"})
+
 
 @app.route("/get_private_history", methods=["POST"])
 def get_private_history():
@@ -826,10 +827,48 @@ def get_private_history():
         msgs = data.get(key, [])
     return jsonify({"status": "OK", "messages": msgs})
 
+
 @app.route("/get_all_users", methods=["POST"])
 def get_all_users():
     load_users()
     return jsonify({"status": "OK", "users": list(users.keys())})
+
+
+@app.route("/recall_message", methods=["POST"])
+def recall_message():
+    if "username" not in session:
+        return jsonify({"status": "FAIL", "message": "需要登录"})
+    username = session["username"]
+    timestamp = request.form.get("timestamp")
+    if not timestamp:
+        return jsonify({"status": "FAIL", "message": "参数缺失"})
+    global chat_history
+    idx = None
+    for i, msg in enumerate(chat_history):
+        if msg["timestamp"] == timestamp:
+            # 判断权限：本人或管理员
+            raw_username = msg["username"]
+            if raw_username.startswith("<strong>"):
+                import re
+
+                raw_username = re.sub(r"<[^>]+>", "", raw_username)
+                raw_username = raw_username.replace("管理员", "").strip()
+            if username == raw_username or username in admin_list:
+                idx = i
+            else:
+                return jsonify({"status": "FAIL", "message": "无权撤回该消息"})
+            break
+    if idx is not None:
+        del chat_history[idx]
+        with open(CHAT_HISTORY_FILE, "w") as file:
+            json.dump(chat_history, file)
+        # 通知所有人刷新
+        socketio.emit(
+            "new_message", {"timestamp": timestamp, "username": "", "message": ""}
+        )
+        return jsonify({"status": "OK"})
+    else:
+        return jsonify({"status": "FAIL", "message": "未找到该消息"})
 
 
 if __name__ == "__main__":
@@ -846,3 +885,8 @@ if __name__ == "__main__":
                 print("Registered admin account: ", admin)
     print("Running on port 1145")
     socketio.run(app, host="0.0.0.0", port=1145)
+else:
+    load_history()
+    load_users()
+    load_2fa_keys()
+    load_loginkeys()
