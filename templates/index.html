@@ -699,12 +699,67 @@
                 });
         }
 
+        let currentUsername = null;
+        fetch('user_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: ``
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    currentUsername = data.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
+                    document.getElementById('register-button').innerText = "您已登录";
+                    document.getElementById('login-button').innerText = "登出";
+                    showNotification('您正以 ' + data.message + ' 的身份聊天。', 'ok');
+                    usingUsername = data.message;
+                    updateChatHistory();
+                } else {
+                    showNotification('系统消息：登录后才可发送消息。', 'fail');
+                }
+            });
         function appendMessageToChatHistory(timestamp, username, message) {
             const chatHistoryDiv = document.getElementById('chat-history');
             const hr = document.createElement('hr');
             chatHistoryDiv.appendChild(hr);
             const p = document.createElement('p');
             p.innerHTML = `用户 ${username} 说道：${message}`;
+            let rawUsername = username.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
+            if (
+                currentUsername &&
+                (currentUsername === rawUsername || currentUsernameIsAdmin())
+            ) {
+                const recallBtn = document.createElement('button');
+                recallBtn.innerText = '撤回';
+                recallBtn.style = 'margin-left:8px;font-size:12px;padding:2px 8px;';
+                recallBtn.onclick = function () {
+                    Swal.fire({
+                        title: '确认撤回？',
+                        text: '撤回后消息将被彻底删除，无法恢复！',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: '撤回',
+                        cancelButtonText: '取消'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch('/recall_message', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: `timestamp=${encodeURIComponent(timestamp)}`
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.status === 'OK') {
+                                        updateChatHistory();
+                                    } else {
+                                        Swal.fire('撤回失败', data.message, 'error');
+                                    }
+                                });
+                        }
+                    });
+                };
+                p.appendChild(recallBtn);
+            }
             chatHistoryDiv.appendChild(p);
             const t = document.createElement('p');
             t.innerHTML = `${timestamp}`;
@@ -713,6 +768,14 @@
             /*Prism.highlightAll();*/
         }
 
+        function currentUsernameIsAdmin() {
+            // 判断当前用户是否为管理员
+            if (!currentUsername) return false;
+            // 这里假设管理员用户名在 admin_list，前端无法直接获取 admin_list，需后端返回
+            // 但由于管理员用户名会被特殊渲染，已在 user_status 处理
+            // 这里简单处理：如果登录后按钮显示“控制面板”则为管理员
+            return document.getElementById('panel-button').style.display !== 'none';
+        }
         function updateChatHistoryWithNewMessage(data) {
             appendMessageToChatHistory(data.timestamp, data.username, data.message);
         }
@@ -1128,22 +1191,22 @@
         // SocketIO 私聊房间加入
         function joinPrivateRoom(username) {
             if (window.socket && username) {
-                socket.emit("join_private", {username: username});
+                socket.emit("join_private", { username: username });
             }
         }
 
         // 页面加载后自动加入私聊房间
         fetch('user_status', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: ``
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'OK') {
-                joinPrivateRoom(data.message.replace(/<[^>]+>/g,"").replace(/管理员/g,"").trim());
-            }
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    joinPrivateRoom(data.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim());
+                }
+            });
 
         // 私聊弹窗
         function openPrivateChatDialog() {
@@ -1170,17 +1233,17 @@
         function sendPrivateMessage(toUser, msg) {
             fetch('/send_private_message', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `to_user=${encodeURIComponent(toUser)}&message=${encodeURIComponent(msg)}`
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    Swal.fire('发送成功', '', 'success');
-                } else {
-                    Swal.fire('发送失败', data.message, 'error');
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        Swal.fire('发送成功', '', 'success');
+                    } else {
+                        Swal.fire('发送失败', data.message, 'error');
+                    }
+                });
         }
 
         // 拉取与某用户的私聊历史
@@ -1196,32 +1259,32 @@
                 if (result.isConfirmed && result.value) {
                     fetch('/get_private_history', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: `with_user=${encodeURIComponent(result.value.trim())}`
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'OK') {
-                            let html = '';
-                            data.messages.forEach(m => {
-                                html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
-                            });
-                            Swal.fire({
-                                title: '私聊历史',
-                                html: html || '暂无消息',
-                                width: 600
-                            });
-                        } else {
-                            Swal.fire('获取失败', data.message, 'error');
-                        }
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'OK') {
+                                let html = '';
+                                data.messages.forEach(m => {
+                                    html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
+                                });
+                                Swal.fire({
+                                    title: '私聊历史',
+                                    html: html || '暂无消息',
+                                    width: 600
+                                });
+                            } else {
+                                Swal.fire('获取失败', data.message, 'error');
+                            }
+                        });
                 }
             });
         }
 
         // SocketIO 实时接收私聊消息
         if (window.socket) {
-            socket.on('private_message', function(data) {
+            socket.on('private_message', function (data) {
                 Swal.fire({
                     title: '收到私聊消息',
                     html: `<b>${data.from}</b> ➡ <b>${data.to}</b>：${data.message}<br><span style="color:#888;font-size:12px">${data.timestamp}</span>`,
@@ -1234,36 +1297,36 @@
         function fetchAllUsers(callback) {
             fetch('/get_all_users', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: ``
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    callback(data.users || []);
-                } else {
-                    callback([]);
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        callback(data.users || []);
+                    } else {
+                        callback([]);
+                    }
+                });
         }
 
         // 私聊面板：选择用户、显示历史、发送消息
         function openPrivateChatPanel() {
-            fetchAllUsers(function(users) {
+            fetchAllUsers(function (users) {
                 // 当前用户名
                 let myName = '';
                 fetch('/user_status', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: ``
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'OK') {
-                        myName = data.message.replace(/<[^>]+>/g,"").replace(/管理员/g,"").trim();
-                    }
-                    showPrivatePanel(users, myName);
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'OK') {
+                            myName = data.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
+                        }
+                        showPrivatePanel(users, myName);
+                    });
             });
         }
 
@@ -1274,18 +1337,27 @@
             Swal.fire({
                 title: '私聊面板',
                 html:
-                    `<select id="private-user-select" class="swal2-select" style="width:90%;margin-bottom:8px;">${userOptions}</select>
+                    `<input id="private-user-search" class="swal2-input" placeholder="搜索用户" style="margin-bottom:4px;">
+                    <select id="private-user-select" class="swal2-select" style="width:90%;margin-bottom:8px;">${userOptions}</select>
                     <div id="private-history" style="height:180px;overflow:auto;border:1px solid #eee;padding:4px 8px;margin-bottom:8px;background:#fafbfc;"></div>
                     <textarea id="private-message" class="swal2-textarea" placeholder="输入私聊内容"></textarea>`,
                 showCancelButton: true,
                 confirmButtonText: '发送',
                 cancelButtonText: '关闭',
                 didOpen: () => {
-                    // 默认加载第一个用户的历史
                     let select = document.getElementById('private-user-select');
+                    let search = document.getElementById('private-user-search');
                     if (select.value) loadPrivateHistory(select.value);
-                    select.onchange = function() {
+                    select.onchange = function () {
                         loadPrivateHistory(this.value);
+                    };
+                    // 搜索功能
+                    search.oninput = function () {
+                        let val = this.value.trim().toLowerCase();
+                        let opts = users.filter(u => u !== myName && u.toLowerCase().includes(val));
+                        select.innerHTML = opts.map(u => `<option value="${u}">${u}</option>`).join('') || '<option value="">无其他用户</option>';
+                        if (select.value) loadPrivateHistory(select.value);
+                        else document.getElementById('private-history').innerHTML = '';
                     };
                 },
                 preConfirm: () => {
@@ -1309,42 +1381,42 @@
             historyDiv.innerHTML = '加载中...';
             fetch('/get_private_history', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `with_user=${encodeURIComponent(toUser)}`
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    let html = '';
-                    data.messages.forEach(m => {
-                        html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
-                    });
-                    historyDiv.innerHTML = html || '暂无消息';
-                } else {
-                    historyDiv.innerHTML = '获取失败：' + data.message;
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        let html = '';
+                        data.messages.forEach(m => {
+                            html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
+                        });
+                        historyDiv.innerHTML = html || '暂无消息';
+                    } else {
+                        historyDiv.innerHTML = '获取失败：' + data.message;
+                    }
+                });
         }
 
         function sendPrivateMessageWithReload(toUser, msg) {
             return fetch('/send_private_message', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `to_user=${encodeURIComponent(toUser)}&message=${encodeURIComponent(msg)}`
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    // 重新加载历史
-                    loadPrivateHistory(toUser);
-                    document.getElementById('private-message').value = '';
-                    Swal.showValidationMessage('发送成功，可继续发送');
-                    return false; // 阻止弹窗关闭
-                } else {
-                    Swal.showValidationMessage('发送失败：' + data.message);
-                    return false;
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        // 重新加载历史
+                        loadPrivateHistory(toUser);
+                        document.getElementById('private-message').value = '';
+                        Swal.showValidationMessage('发送成功，可继续发送');
+                        return false; // 阻止弹窗关闭
+                    } else {
+                        Swal.showValidationMessage('发送失败：' + data.message);
+                        return false;
+                    }
+                });
         }
 
     </script>
