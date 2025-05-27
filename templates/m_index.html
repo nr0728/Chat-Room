@@ -1281,18 +1281,30 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `with_user=${encodeURIComponent(toUser)}`
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'OK') {
-                        let html = '';
-                        data.messages.forEach(m => {
-                            html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
-                        });
-                        historyDiv.innerHTML = html || '暂无消息';
-                    } else {
-                        historyDiv.innerHTML = '获取失败：' + data.message;
-                    }
-                });
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    // 标记为已读
+                    fetch('/mark_private_read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `with_user=${encodeURIComponent(toUser)}`
+                    });
+                    let html = '';
+                    // 获取当前用户名
+                    let myName = currentUsername;
+                    data.messages.forEach(m => {
+                        let status = '';
+                        if (m.from === myName) {
+                            status = m.read ? '<span style="color:green;font-size:12px;">[已读]</span>' : '<span style="color:#aaa;font-size:12px;">[未读]</span>';
+                        }
+                        html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message} ${status}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
+                    });
+                    historyDiv.innerHTML = html || '暂无消息';
+                } else {
+                    historyDiv.innerHTML = '获取失败：' + data.message;
+                }
+            });
         }
 
         function sendPrivateMessageWithReload(toUser, msg) {

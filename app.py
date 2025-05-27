@@ -796,6 +796,7 @@ def send_private_message():
         "to": to_user,
         "message": cleaned_message,
         "timestamp": timestamp,
+        "read": False  # 新增已读字段
     }
     with private_messages_lock:
         data = load_private_messages()
@@ -826,6 +827,30 @@ def get_private_history():
         key = get_private_key(user1, user2)
         msgs = data.get(key, [])
     return jsonify({"status": "OK", "messages": msgs})
+
+
+@app.route("/mark_private_read", methods=["POST"])
+def mark_private_read():
+    if "username" not in session:
+        return jsonify({"status": "FAIL", "message": "需要登录"})
+    user1 = session["username"]
+    user2 = request.form.get("with_user")
+    if not user2:
+        return jsonify({"status": "FAIL", "message": "参数缺失"})
+    with private_messages_lock:
+        data = load_private_messages()
+        key = get_private_key(user1, user2)
+        msgs = data.get(key, [])
+        changed = False
+        for msg in msgs:
+            # 只标记对方发给自己的消息为已读
+            if msg["to"] == user1 and not msg.get("read", False):
+                msg["read"] = True
+                changed = True
+        if changed:
+            data[key] = msgs
+            save_private_messages(data)
+    return jsonify({"status": "OK"})
 
 
 @app.route("/get_all_users", methods=["POST"])
