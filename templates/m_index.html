@@ -118,11 +118,13 @@
         <div id="input-container">
             <div style="display: flex; align-items: center; gap: 10px; flex-direction: column; align-items: stretch;">
                 <input type="text" id="message-input" placeholder="输入你的消息…"
-                    style="height:90px; margin: 0 auto; display: block;width: 80%;" autocomplete="off" readonly
-                    onfocus="this.removeAttribute('readonly');">
+                    style="height:90px; margin: 0 auto; display: block;width: 80%; font-size: 20px;" autocomplete="off"
+                    readonly onfocus="this.removeAttribute('readonly');">
                 <div style="display: flex; align-items: center; gap: 10px;margin: 0 auto;">
-                    <button onclick="startVoiceInput()" style="height:60px;padding:10px;width: 30%;">🎤 语音输入</button>
-                    <select id="language-selector" style="width: 30%;height:60px;background-color: #8CC269;">
+                    <button onclick="startVoiceInput()" style="height:60px;padding:10px;width: unset;font-size: 2vw;">🎤
+                        语音输入</button>
+                    <select id="language-selector"
+                        style="width: unset;height:60px;background-color: #8CC269;font-size: 2vw;">
                         <option value="zh-CN">中文</option>
                         <option value="en-US">English</option>
                         <option value="es-ES">Español</option>
@@ -136,9 +138,11 @@
                         <option value="ar-SA">العربية</option>
                         <option value="hi-IN">हिन्दी</option>
                     </select>
-                    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;width: unset;">😀 插入 Emoji
+                    <button onclick="openEmojiPicker()" style="height:60px;padding:10px;width: unset;font-size: 2vw;">😀
+                        插入 Emoji
                         表情包</button>
-                    <button onclick="sendMessage()" style="height:60px;width: 30%;">📩 发送消息</button>
+                    <button onclick="sendMessage()" style="height:60px;width: unset;font-size: 2vw;">📩
+                        发送消息</button>
                 </div>
             </div>
         </div>
@@ -146,7 +150,7 @@
             <textarea type="text" id="message-input-code" class="swal-content__textarea" placeholder=" 输入你的代码…" rows="2"
                 autocomplete="off" style="flex:1;width: 80%;"></textarea>
             <div style="display: flex; align-items: center; gap: 10px;margin: 0 auto;">
-                <button onclick="sendCode()" style="height: 60px;width: unset;">📩 发送代码</button>
+                <button onclick="sendCode()" style="height: 60px;width: 100%;">📩 发送代码</button>
             </div>
         </div>
         <!-- 私聊入口按钮 -->
@@ -1209,72 +1213,117 @@
 
         // 私聊面板：选择用户、显示历史、发送消息
         function openPrivateChatPanel() {
-            fetchAllUsers(function (users) {
-                // 当前用户名
-                let myName = '';
-                fetch('/user_status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: ``
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'OK') {
-                            myName = data.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
-                        }
-                        showPrivatePanel(users, myName);
-                    });
-            });
+            fetch('/get_private_contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: ``
+            })
+                .then(response => response.json())
+                .then(data => {
+                    let contacts = data.contacts || [];
+                    let allUsers = data.all_users || [];
+                    let myName = '';
+                    fetch('/user_status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: ``
+                    })
+                        .then(response => response.json())
+                        .then(userData => {
+                            if (userData.status === 'OK') {
+                                myName = userData.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
+                            }
+                            showPrivatePanelV2(contacts, allUsers, myName);
+                        });
+                });
         }
 
-        function showPrivatePanel(users, myName) {
-            // 构建用户选择框
-            let userOptions = users.filter(u => u !== myName).map(u => `<option value="${u}">${u}</option>`).join('');
-            if (!userOptions) userOptions = '<option value="">无其他用户</option>';
+        function showPrivatePanelV2(contacts, allUsers, myName) {
+            let selectedUser = contacts.length > 0 ? contacts[0] : '';
+            let contactsHtml = contacts.map(u =>
+                `<div class="private-contact-item" data-user="${u}" style="padding:10px;cursor:pointer;border-bottom:1px solid #eee;font-size:16px;">${u}</div>`
+            ).join('') || '<div style="color:#aaa;padding:12px;">暂无私聊</div>';
+            let addBtnHtml = `<button id="add-private-user-btn" style="width:96%;margin:8px 2% 8px 2%;">➕ 添加用户</button>`;
             Swal.fire({
                 title: '私聊面板',
-                html:
-                    `<input id="private-user-search" class="swal2-input" placeholder="搜索用户" style="margin-bottom:4px;">
-                    <select id="private-user-select" class="swal2-select" style="width:90%;margin-bottom:8px;">${userOptions}</select>
-                    <div id="private-history" style="height:180px;overflow:auto;border:1px solid #eee;padding:4px 8px;margin-bottom:8px;background:#fafbfc;"></div>
-                    <textarea id="private-message" class="swal2-textarea" placeholder="输入私聊内容"></textarea>`,
+                html: `
+                <div style="display:flex;min-width:320px;max-width:98vw;height:350px;">
+                    <div style="width:120px;display:flex;flex-direction:column;border-right:1px solid #eee;height:100%;">
+                        ${addBtnHtml}
+                        <div id="private-contacts-list" style="flex:1;overflow:auto;">${contactsHtml}</div>
+                    </div>
+                    <div style="flex:1;display:flex;flex-direction:column;height:100%;padding-left:8px;">
+                        <div id="private-chat-title" style="font-weight:bold;margin-bottom:8px;font-size:16px;">${selectedUser ? '与 ' + selectedUser + ' 的私聊' : '请选择用户'}</div>
+                        <div id="private-history" style="flex:1;overflow:auto;border:1px solid #eee;padding:4px 8px;margin-bottom:8px;background:#fafbfc;height:120px;font-size:14px;"></div>
+                        <div style="display:flex;gap:6px;">
+                            <input id="private-message" class="swal2-input" placeholder="输入私聊内容" style="flex:1;margin-bottom:0;font-size:15px;">
+                            <button id="private-send-btn" style="width:60px;">发送</button>
+                        </div>
+                    </div>
+                </div>
+                `,
                 showCancelButton: true,
-                confirmButtonText: '发送',
+                showConfirmButton: false,
                 cancelButtonText: '关闭',
                 didOpen: () => {
-                    let select = document.getElementById('private-user-select');
-                    let search = document.getElementById('private-user-search');
-                    if (select.value) loadPrivateHistory(select.value);
-                    select.onchange = function () {
-                        loadPrivateHistory(this.value);
+                    let currentUser = selectedUser;
+                    const contactsList = document.getElementById('private-contacts-list');
+                    const chatTitle = document.getElementById('private-chat-title');
+                    const historyDiv = document.getElementById('private-history');
+                    const sendBtn = document.getElementById('private-send-btn');
+                    const msgInput = document.getElementById('private-message');
+                    if (currentUser) loadPrivateHistoryV2(currentUser, historyDiv, myName);
+
+                    contactsList.querySelectorAll('.private-contact-item').forEach(item => {
+                        item.onclick = function () {
+                            currentUser = this.getAttribute('data-user');
+                            chatTitle.innerText = '与 ' + currentUser + ' 的私聊';
+                            loadPrivateHistoryV2(currentUser, historyDiv, myName);
+                        };
+                    });
+
+                    sendBtn.onclick = function () {
+                        if (!currentUser) {
+                            Swal.showValidationMessage('请选择用户');
+                            return;
+                        }
+                        let msg = msgInput.value.trim();
+                        if (!msg) {
+                            Swal.showValidationMessage('请输入内容');
+                            return;
+                        }
+                        sendPrivateMessageWithReloadV2(currentUser, msg, historyDiv, myName, () => {
+                            msgInput.value = '';
+                        });
                     };
-                    // 搜索功能
-                    search.oninput = function () {
-                        let val = this.value.trim().toLowerCase();
-                        let opts = users.filter(u => u !== myName && u.toLowerCase().includes(val));
-                        select.innerHTML = opts.map(u => `<option value="${u}">${u}</option>`).join('') || '<option value="">无其他用户</option>';
-                        if (select.value) loadPrivateHistory(select.value);
-                        else document.getElementById('private-history').innerHTML = '';
+
+                    msgInput.addEventListener('keyup', function (e) {
+                        if (e.key === 'Enter') sendBtn.onclick();
+                    });
+
+                    document.getElementById('add-private-user-btn').onclick = function () {
+                        Swal.fire({
+                            title: '添加私聊用户',
+                            input: 'select',
+                            inputOptions: allUsers.filter(u => u !== myName && !contacts.includes(u)).reduce((obj, u) => { obj[u] = u; return obj; }, {}),
+                            inputPlaceholder: '选择用户',
+                            showCancelButton: true,
+                            confirmButtonText: '添加',
+                            cancelButtonText: '取消'
+                        }).then(res => {
+                            if (res.isConfirmed && res.value) {
+                                let newUser = res.value;
+                                if (!contacts.includes(newUser)) contacts.push(newUser);
+                                Swal.close();
+                                setTimeout(() => showPrivatePanelV2(contacts, allUsers, myName), 100);
+                            }
+                        });
                     };
-                },
-                preConfirm: () => {
-                    const toUser = document.getElementById('private-user-select').value;
-                    const msg = document.getElementById('private-message').value.trim();
-                    if (!toUser) {
-                        Swal.showValidationMessage('请选择用户');
-                        return false;
-                    }
-                    if (!msg) {
-                        Swal.showValidationMessage('请输入内容');
-                        return false;
-                    }
-                    return sendPrivateMessageWithReload(toUser, msg);
                 }
             });
         }
 
-        function loadPrivateHistory(toUser) {
-            const historyDiv = document.getElementById('private-history');
+        function loadPrivateHistoryV2(toUser, historyDiv, myName) {
             historyDiv.innerHTML = '加载中...';
             fetch('/get_private_history', {
                 method: 'POST',
@@ -1284,15 +1333,12 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'OK') {
-                        // 标记为已读
                         fetch('/mark_private_read', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                             body: `with_user=${encodeURIComponent(toUser)}`
                         });
                         let html = '';
-                        // 获取当前用户名
-                        let myName = currentUsername;
                         data.messages.forEach(m => {
                             let status = '';
                             if (m.from === myName) {
@@ -1307,8 +1353,8 @@
                 });
         }
 
-        function sendPrivateMessageWithReload(toUser, msg) {
-            return fetch('/send_private_message', {
+        function sendPrivateMessageWithReloadV2(toUser, msg, historyDiv, myName, cb) {
+            fetch('/send_private_message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `to_user=${encodeURIComponent(toUser)}&message=${encodeURIComponent(msg)}`
@@ -1316,14 +1362,10 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'OK') {
-                        // 重新加载历史
-                        loadPrivateHistory(toUser);
-                        document.getElementById('private-message').value = '';
-                        Swal.showValidationMessage('发送成功，可继续发送');
-                        return false; // 阻止弹窗关闭
+                        loadPrivateHistoryV2(toUser, historyDiv, myName);
+                        if (cb) cb();
                     } else {
                         Swal.showValidationMessage('发送失败：' + data.message);
-                        return false;
                     }
                 });
         }
