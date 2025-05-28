@@ -895,6 +895,7 @@ def recall_message():
     else:
         return jsonify({"status": "FAIL", "message": "未找到该消息"})
 
+
 @app.route("/get_private_contacts", methods=["POST"])
 def get_private_contacts():
     if "username" not in session:
@@ -916,11 +917,8 @@ def get_private_contacts():
         contacts.discard(myname)
     if myname in all_users:
         all_users.remove(myname)
-    return jsonify({
-        "status": "OK",
-        "contacts": list(contacts),
-        "all_users": all_users
-    })
+    return jsonify({"status": "OK", "contacts": list(contacts), "all_users": all_users})
+
 
 if __name__ == "__main__":
     load_history()

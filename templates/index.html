@@ -1318,24 +1318,24 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: ``
             })
-            .then(response => response.json())
-            .then(data => {
-                let contacts = data.contacts || [];
-                let allUsers = data.all_users || [];
-                let myName = '';
-                fetch('/user_status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: ``
-                })
                 .then(response => response.json())
-                .then(userData => {
-                    if (userData.status === 'OK') {
-                        myName = userData.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
-                    }
-                    showPrivatePanelV2(contacts, allUsers, myName);
+                .then(data => {
+                    let contacts = data.contacts || [];
+                    let allUsers = data.all_users || [];
+                    let myName = '';
+                    fetch('/user_status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: ``
+                    })
+                        .then(response => response.json())
+                        .then(userData => {
+                            if (userData.status === 'OK') {
+                                myName = userData.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
+                            }
+                            showPrivatePanelV2(contacts, allUsers, myName);
+                        });
                 });
-            });
         }
 
         function showPrivatePanelV2(contacts, allUsers, myName) {
@@ -1377,7 +1377,7 @@
 
                     // 切换联系人
                     contactsList.querySelectorAll('.private-contact-item').forEach(item => {
-                        item.onclick = function() {
+                        item.onclick = function () {
                             currentUser = this.getAttribute('data-user');
                             chatTitle.innerText = '与 ' + currentUser + ' 的私聊';
                             loadPrivateHistoryV2(currentUser, historyDiv, myName);
@@ -1385,7 +1385,7 @@
                     });
 
                     // 发送消息
-                    sendBtn.onclick = function() {
+                    sendBtn.onclick = function () {
                         if (!currentUser) {
                             Swal.showValidationMessage('请选择用户');
                             return;
@@ -1401,12 +1401,12 @@
                     };
 
                     // 回车发送
-                    msgInput.addEventListener('keyup', function(e) {
+                    msgInput.addEventListener('keyup', function (e) {
                         if (e.key === 'Enter') sendBtn.onclick();
                     });
 
                     // 添加用户按钮
-                    document.getElementById('add-private-user-btn').onclick = function() {
+                    document.getElementById('add-private-user-btn').onclick = function () {
                         Swal.fire({
                             title: '添加私聊用户',
                             input: 'select',
@@ -1436,28 +1436,28 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `with_user=${encodeURIComponent(toUser)}`
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    // 标记为已读
-                    fetch('/mark_private_read', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `with_user=${encodeURIComponent(toUser)}`
-                    });
-                    let html = '';
-                    data.messages.forEach(m => {
-                        let status = '';
-                        if (m.from === myName) {
-                            status = m.read ? '<span style="color:green;font-size:12px;">[已读]</span>' : '<span style="color:#aaa;font-size:12px;">[未读]</span>';
-                        }
-                        html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message} ${status}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
-                    });
-                    historyDiv.innerHTML = html || '暂无消息';
-                } else {
-                    historyDiv.innerHTML = '获取失败：' + data.message;
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        // 标记为已读
+                        fetch('/mark_private_read', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: `with_user=${encodeURIComponent(toUser)}`
+                        });
+                        let html = '';
+                        data.messages.forEach(m => {
+                            let status = '';
+                            if (m.from === myName) {
+                                status = m.read ? '<span style="color:green;font-size:12px;">[已读]</span>' : '<span style="color:#aaa;font-size:12px;">[未读]</span>';
+                            }
+                            html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message} ${status}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
+                        });
+                        historyDiv.innerHTML = html || '暂无消息';
+                    } else {
+                        historyDiv.innerHTML = '获取失败：' + data.message;
+                    }
+                });
         }
 
         function sendPrivateMessageWithReloadV2(toUser, msg, historyDiv, myName, cb) {
@@ -1466,15 +1466,15 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `to_user=${encodeURIComponent(toUser)}&message=${encodeURIComponent(msg)}`
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    loadPrivateHistoryV2(toUser, historyDiv, myName);
-                    if (cb) cb();
-                } else {
-                    Swal.showValidationMessage('发送失败：' + data.message);
-                }
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'OK') {
+                        loadPrivateHistoryV2(toUser, historyDiv, myName);
+                        if (cb) cb();
+                    } else {
+                        Swal.showValidationMessage('发送失败：' + data.message);
+                    }
+                });
         }
 
     </script>
