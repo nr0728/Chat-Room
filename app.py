@@ -53,7 +53,7 @@ allowed_attrs = {"*": ["style"], "p": ["style"]}
 
 def PC_check(request):
     user_agent = request.headers.get("User-Agent")
-    # return False  # DEBUG
+    return False  # DEBUG
     return user_agents.parse(user_agent).is_pc
 
 
@@ -895,6 +895,32 @@ def recall_message():
     else:
         return jsonify({"status": "FAIL", "message": "未找到该消息"})
 
+@app.route("/get_private_contacts", methods=["POST"])
+def get_private_contacts():
+    if "username" not in session:
+        return jsonify({"status": "FAIL", "message": "需要登录"})
+    myname = session["username"]
+    with private_messages_lock:
+        data = load_private_messages()
+        contacts = set()
+        for key, msgs in data.items():
+            for msg in msgs:
+                if msg["from"] == myname:
+                    contacts.add(msg["to"])
+                if msg["to"] == myname:
+                    contacts.add(msg["from"])
+    load_users()
+    all_users = list(users.keys())
+    # 不包含自己
+    if myname in contacts:
+        contacts.discard(myname)
+    if myname in all_users:
+        all_users.remove(myname)
+    return jsonify({
+        "status": "OK",
+        "contacts": list(contacts),
+        "all_users": all_users
+    })
 
 if __name__ == "__main__":
     load_history()
