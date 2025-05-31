@@ -919,6 +919,9 @@ def get_private_contacts():
         all_users.remove(myname)
     return jsonify({"status": "OK", "contacts": list(contacts), "all_users": all_users})
 
+@app.route('/chat')
+def chat():
+    return render_template("chat.html")
 
 if __name__ == "__main__":
     load_history()
