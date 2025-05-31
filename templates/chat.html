@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" style="width:100vw;height:100vh;margin:0;padding:0;box-sizing:border-box;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>私聊</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='prism.css') }}">
+    <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+    <link href="{{ url_for('static', filename='sweetalert2.all.min.js') }}" rel="stylesheet">
+    <style>
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        #private-chat-root {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            background: #fafbfc;
+        }
+        #private-contacts-list {
+            width: 180px;
+            border-right: 1px solid #eee;
+            overflow-y: auto;
+            background: #fff;
+            padding: 0;
+        }
+        .private-contact-item {
+            padding: 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 18px;
+        }
+        .private-contact-item.selected {
+            background: #e6f7ff;
+        }
+        #private-main-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 0 0 0 0;
+            align-items: center; /* 横向居中 */
+        }
+        #private-chat-title {
+            font-weight: bold;
+            font-size: 20px;
+            padding: 16px 16px 8px 16px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+            width: 100%;
+            text-align: center; /* 横向居中 */
+        }
+        #private-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: #fafbfc;
+            font-size: 16px;
+            width: 100%;
+            max-width: 700px; /* 可选：限制最大宽度 */
+            margin: 0 auto;    /* 横向居中 */
+        }
+        #private-input-bar {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+            background: #fff;
+            border-top: 1px solid #eee;
+        }
+        #private-message {
+            flex: 1;
+            font-size: 16px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        #private-send-btn {
+            width: 80px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: none;
+            background: #8CC269;
+            color: #fff;
+            cursor: pointer;
+        }
+        #add-private-user-btn {
+            width: 90%;
+            margin: 12px 5%;
+            padding: 8px 0;
+            font-size: 16px;
+            border-radius: 4px;
+            border: none;
+            background: #35b6ad;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div id="private-chat-root">
+    <div style="display:flex;flex-direction:column;width:180px;height:100vh;">
+        <button id="add-private-user-btn">➕ 添加用户</button>
+        <div id="private-contacts-list"></div>
+    </div>
+    <div id="private-main-panel">
+        <div id="private-chat-title">请选择用户</div>
+        <div id="private-history"></div>
+        <div id="private-input-bar">
+            <input id="private-message" placeholder="输入私聊内容" autocomplete="off">
+            <button id="private-send-btn">发送</button>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='sweetalert2.all.min.js') }}"></script>
+<script src="{{ url_for('static', filename='prism.js') }}"></script>
+<script>
+    // ...私聊面板相关JS逻辑...
+    let contacts = [];
+    let allUsers = [];
+    let myName = '';
+    let currentUser = '';
+    const contactsList = document.getElementById('private-contacts-list');
+    const chatTitle = document.getElementById('private-chat-title');
+    const historyDiv = document.getElementById('private-history');
+    const sendBtn = document.getElementById('private-send-btn');
+    const msgInput = document.getElementById('private-message');
+    const addBtn = document.getElementById('add-private-user-btn');
+
+    function fetchContactsAndUsers() {
+        fetch('/get_private_contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: ``
+        })
+        .then(response => response.json())
+        .then(data => {
+            contacts = data.contacts || [];
+            allUsers = data.all_users || [];
+            fetch('/user_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: ``
+            })
+            .then(response => response.json())
+            .then(userData => {
+                if (userData.status === 'OK') {
+                    myName = userData.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
+                }
+                renderContacts();
+                if (contacts.length > 0) selectUser(contacts[0]);
+            });
+        });
+    }
+
+    function renderContacts() {
+        contactsList.innerHTML = '';
+        contacts.forEach(u => {
+            const div = document.createElement('div');
+            div.className = 'private-contact-item' + (u === currentUser ? ' selected' : '');
+            div.textContent = u;
+            div.onclick = () => selectUser(u);
+            contactsList.appendChild(div);
+        });
+    }
+
+    function selectUser(u) {
+        currentUser = u;
+        renderContacts();
+        chatTitle.textContent = '与 ' + u + ' 的私聊';
+        loadPrivateHistoryV2(u);
+    }
+
+    function loadPrivateHistoryV2(toUser) {
+        historyDiv.innerHTML = '加载中...';
+        fetch('/get_private_history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `with_user=${encodeURIComponent(toUser)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'OK') {
+                fetch('/mark_private_read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `with_user=${encodeURIComponent(toUser)}`
+                });
+                let html = '';
+                data.messages.forEach(m => {
+                    let status = '';
+                    if (m.from === myName) {
+                        status = m.read ? '<span style="color:green;font-size:12px;">[已读]</span>' : '<span style="color:#aaa;font-size:12px;">[未读]</span>';
+                    }
+                    html += `<div style="margin-bottom:8px;"><b>${m.from}</b> ➡ <b>${m.to}</b>：${m.message} ${status}<br><span style="color:#888;font-size:12px">${m.timestamp}</span></div>`;
+                });
+                historyDiv.innerHTML = html || '暂无消息';
+                historyDiv.scrollTop = historyDiv.scrollHeight;
+            } else {
+                historyDiv.innerHTML = '获取失败：' + data.message;
+            }
+        });
+    }
+
+    sendBtn.onclick = function () {
+        if (!currentUser) {
+            Swal.fire('请选择用户', '', 'warning');
+            return;
+        }
+        let msg = msgInput.value.trim();
+        if (!msg) {
+            Swal.fire('请输入内容', '', 'warning');
+            return;
+        }
+        fetch('/send_private_message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `to_user=${encodeURIComponent(currentUser)}&message=${encodeURIComponent(msg)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'OK') {
+                loadPrivateHistoryV2(currentUser);
+                msgInput.value = '';
+            } else {
+                Swal.fire('发送失败', data.message, 'error');
+            }
+        });
+    };
+
+    msgInput.addEventListener('keyup', function (e) {
+        if (e.key === 'Enter') sendBtn.onclick();
+    });
+
+    addBtn.onclick = function () {
+        const options = allUsers.filter(u => u !== myName && !contacts.includes(u));
+        if (options.length === 0) {
+            Swal.fire('没有可添加的用户', '', 'info');
+            return;
+        }
+        Swal.fire({
+            title: '添加私聊用户',
+            input: 'select',
+            inputOptions: options.reduce((obj, u) => { obj[u] = u; return obj; }, {}),
+            inputPlaceholder: '选择用户',
+            showCancelButton: true,
+            confirmButtonText: '添加',
+            cancelButtonText: '取消'
+        }).then(res => {
+            if (res.isConfirmed && res.value) {
+                let newUser = res.value;
+                if (!contacts.includes(newUser)) contacts.push(newUser);
+                renderContacts();
+                selectUser(newUser);
+            }
+        });
+    };
+
+    // SocketIO 实时接收私聊消息
+    const socket = io();
+    socket.on('private_message', function (data) {
+        if (data.from === currentUser || data.to === currentUser) {
+            loadPrivateHistoryV2(currentUser);
+        }
+    });
+
+    fetchContactsAndUsers();
+</script>
+</body>
+</html>

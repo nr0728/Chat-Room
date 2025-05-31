@@ -1312,30 +1312,7 @@
 
         // 私聊面板：左侧为历史用户列表和添加用户按钮，右侧为聊天详情和发送框
         function openPrivateChatPanel() {
-            // 获取历史私聊用户和所有用户
-            fetch('/get_private_contacts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: ``
-            })
-                .then(response => response.json())
-                .then(data => {
-                    let contacts = data.contacts || [];
-                    let allUsers = data.all_users || [];
-                    let myName = '';
-                    fetch('/user_status', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: ``
-                    })
-                        .then(response => response.json())
-                        .then(userData => {
-                            if (userData.status === 'OK') {
-                                myName = userData.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
-                            }
-                            showPrivatePanelV2(contacts, allUsers, myName);
-                        });
-                });
+            location.href='/chat';
         }
 
         function showPrivatePanelV2(contacts, allUsers, myName) {

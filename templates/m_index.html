@@ -1213,29 +1213,7 @@
 
         // 私聊面板：选择用户、显示历史、发送消息
         function openPrivateChatPanel() {
-            fetch('/get_private_contacts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: ``
-            })
-                .then(response => response.json())
-                .then(data => {
-                    let contacts = data.contacts || [];
-                    let allUsers = data.all_users || [];
-                    let myName = '';
-                    fetch('/user_status', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: ``
-                    })
-                        .then(response => response.json())
-                        .then(userData => {
-                            if (userData.status === 'OK') {
-                                myName = userData.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
-                            }
-                            showPrivatePanelV2(contacts, allUsers, myName);
-                        });
-                });
+            location.href='/chat'
         }
 
         function showPrivatePanelV2(contacts, allUsers, myName) {
