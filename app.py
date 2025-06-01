@@ -14,6 +14,7 @@ import qrcode
 import base64
 import user_agents
 import threading
+import argparse  # 新增
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -43,8 +44,9 @@ private_messages_lock = threading.Lock()
 # 封禁的 IP 列表
 BANNED_IP = ["211.158.25.248", "122.224.219.246"]
 
-# 管理员列表
-admin_list = ["your-admin-username"]  # 请自定义
+# 管理员列表文件路径
+ADMIN_LIST_FILE = "admin.json"
+admin_list = []
 
 # 允许的 HTML 标签和属性白名单
 allowed_tags = ["p", "br"]
@@ -100,6 +102,15 @@ def load_loginkeys():
         loginkeys = {}
 
 
+def load_admin_list():
+    global admin_list
+    try:
+        with open(ADMIN_LIST_FILE, "r") as file:
+            admin_list = json.load(file)
+    except FileNotFoundError:
+        admin_list = []
+
+
 def save_users():
     with open(USER_DATA_FILE, "w") as file:
         json.dump(users, file)
@@ -114,6 +125,11 @@ def save_2fa_keys():
 def save_loginkeys():
     with open(USER_LOGINKEY_FILE, "w") as file:
         json.dump(loginkeys, file)
+
+
+def save_admin_list():
+    with open(ADMIN_LIST_FILE, "w") as file:
+        json.dump(admin_list, file)
 
 
 characters = "wertyupadfghjkxcvbnm34578"
@@ -343,6 +359,74 @@ def send_message():
     return jsonify({"status": "OK"})
 
 
+def send_message_cli(username, message):
+    if username not in users:
+        return {
+            "status": "FAIL",
+            "message": "The user attempting to send the message does not exist",
+        }
+
+    cleaned_message = message
+    # if len(cleaned_message) > 100 and username not in admin_list:
+    # return {"status": "FAIL", "message": "The message length must be less than 100 characters"}
+    # if username not in admin_list:
+    # cleaned_message = bleach.clean(
+    # message, tags=allowed_tags, attributes=allowed_attrs
+    # )
+    # if (
+    # "\u06ed" in cleaned_message
+    # or "\u0e49" in cleaned_message
+    # or "\u0e47" in cleaned_message
+    # ):
+    # return {"status": "FAIL", "message": "The message contains illegal characters"}
+
+    now = datetime.now()
+    timestamp = f"发送时间：{now.strftime('%Y-%m-%d %H:%M:%S')}.{now.strftime('%f')[:3]}.{now.strftime('%f')[3:]}"
+    user_ip = "127.0.0.1"
+    # print(user_ip)
+    try:
+        user_ip = user_ip.split(",")[0].strip()
+    except:
+        pass
+    # if user_ip in BANNED_IP:
+    # return {"status": "FAIL", "message": "IP 已封禁，请联系 monkey@llong.tech"}
+    try:
+        response = requests.get(f"https://ipinfo.io/{user_ip}/json")
+        location_data = response.json()
+        city = location_data.get("city", "Unknown City")
+        region = location_data.get("region", "Unknown Region")
+        country = (
+            location_data.get("country", "Unknown Country")
+            .replace("HK", "CN")
+            .replace("TW", "CN")
+            .replace("MO", "CN")
+        )
+    except requests.RequestException:
+        city = "Unknown City"
+        region = "Unknown Region"
+        country = "Unknown Country"
+
+    if username in admin_list:
+        # print("admin sending message")
+        timestamp += f"<br>用户已启用隐藏 IP 服务"
+    else:
+        timestamp += f"<br>用户 IP：{user_ip}, {city}, {region}, {country}"
+    if username in admin_list:
+        username = (
+            '<strong><font color="#e74c3c" size="4">'
+            + username
+            + ' </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
+        )
+    chat_history.append(
+        {"timestamp": timestamp, "username": username, "message": cleaned_message}
+    )
+
+    with open(CHAT_HISTORY_FILE, "w") as file:
+        json.dump(chat_history, file)
+
+    return {"status": "OK"}
+
+
 @app.route("/send_code", methods=["POST"])
 def send_code():
     if "username" not in session:
@@ -519,6 +603,16 @@ def register_admin(username, password):
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     users[username] = hashed_password
     save_users()
+    if username not in admin_list:
+        admin_list.append(username)
+        save_admin_list()
+
+
+def register_user(username, password):
+    username = bleach.clean(username, tags=[], attributes={})
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    users[username] = hashed_password
+    save_users()
 
 
 @app.route("/login", methods=["POST"])
@@ -554,6 +648,17 @@ def login():
     else:
         session["captcha"] = str(random.randint(1, 1145141919810))
         return jsonify({"status": "FAIL", "message": "用户名或密码错误"})
+
+
+def login_test(username, password):
+
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    username = bleach.clean(username, tags=[], attributes={})
+
+    if username in users and users[username] == hashed_password:
+        return True
+    else:
+        return False
 
 
 @app.route("/login_with_loginkey", methods=["POST"])
@@ -919,15 +1024,76 @@ def get_private_contacts():
         all_users.remove(myname)
     return jsonify({"status": "OK", "contacts": list(contacts), "all_users": all_users})
 
-@app.route('/chat')
+
+@app.route("/chat")
 def chat():
     return render_template("chat.html")
+
 
 if __name__ == "__main__":
     load_history()
     load_users()
     load_2fa_keys()
     load_loginkeys()
+    load_admin_list()  # 加载管理员列表
+    parser = argparse.ArgumentParser(description="Chat Room Server CLI")
+    parser.add_argument(
+        "-p",
+        "--port",
+        type=int,
+        default=1145,
+        help="Specify the running port (default: 1145)",
+    )
+    # 新增注册用户参数
+    parser.add_argument(
+        "-ru",
+        "--register-user",
+        nargs=2,
+        metavar=("USERNAME", "PASSWORD"),
+        help="Register a new user with username and password",
+    )
+    parser.add_argument(
+        "-ra",
+        "--register-admin",
+        nargs=2,
+        metavar=("USERNAME", "PASSWORD"),
+        help="Register a new admin with username and password",
+    )
+    parser.add_argument(
+        "-sm",
+        "--send-message",
+        nargs=3,
+        metavar=("USERNAME", "PASSWORD", "MESSAGE"),
+        help="Designated user's identity to send information",
+    )
+    args = parser.parse_args()
+    # 注册用户CLI逻辑
+    if args.register_user:
+        username, password = args.register_user
+        if username in users:
+            print(f"User {username} already exists")
+        else:
+            register_user(username, password)
+            print(f"User {username} successfully registered")
+    if args.register_admin:
+        username, password = args.register_admin
+        if username in users:
+            print(f"Admin {username} already exists")
+        else:
+            register_admin(username, password)
+            print(f"Admin {username} successfully registered")
+        exit(0)
+    if args.send_message:
+        username, password, message = args.send_message
+        if username in users:
+            if login_test(username, password):
+                send_message_cli(username, message)
+                print(f"{username} sent a message: {message}")
+            else:
+                print(f"{username} failed to send a message: {message}")
+        else:
+            print(f"User {username} does not exist")
+        exit(0)
     for admin in admin_list:
         if admin not in users:
             prompt = f"The administrator account '{admin}' is not currently registered. Please enter the password for this user to proceed with automatic registration. To skip this step, simply press Enter: "
@@ -935,10 +1101,11 @@ if __name__ == "__main__":
             if admin_password:
                 register_admin(admin, admin_password)
                 print("Registered admin account: ", admin)
-    print("Running on port 1145")
-    socketio.run(app, host="0.0.0.0", port=1145)
+    print(f"Running on port {args.port}")
+    socketio.run(app, host="0.0.0.0", port=args.port)
 else:
     load_history()
     load_users()
     load_2fa_keys()
     load_loginkeys()
+    load_admin_list()

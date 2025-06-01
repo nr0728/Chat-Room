@@ -3,4 +3,5 @@ password.json
 chat_history.json
 loginkeys.json
 private_messages.json
+admin.json
 __pycache__

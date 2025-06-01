@@ -22,7 +22,13 @@ cd Chat-Room/
 python -m pip install -r requirements.txt
 ```
 
-### Step 3. 运行
+### Step 3. 初始化
+
+```bash
+python init.py
+```
+
+### Step 4. 运行
 
 ```bash
 python app.py
@@ -34,6 +40,6 @@ python app.py
 
 恢复 screen 终端：`screen -r <终端名>`。
 
-## 注意
+## 关于 CLI
 
-你需要先在代码里修改管理员列表然后运行，并且管理员用户不是默认创建的，你需要根据运行程序时的提示注册用户，如果跳过，可以在网页中注册。
+执行`python app.py -h`可以看到所有 CLI 命令。
