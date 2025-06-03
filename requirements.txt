@@ -6,4 +6,3 @@ requests
 pyotp
 qrcode
 user_agents
-better-profanity
