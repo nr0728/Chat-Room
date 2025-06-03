@@ -16,7 +16,6 @@ import user_agents
 import threading
 import argparse  # 新增
 import fnmatch
-# import better_profanity
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
