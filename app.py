@@ -16,7 +16,7 @@ import user_agents
 import threading
 import argparse  # 新增
 import fnmatch
-
+import better_profanity
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -536,7 +536,7 @@ def send_code_cli(username, message):
 
     if username not in users:
         return {"status": "FAIL", "message": "The user attempting to send the message does not exist"}
-
+    message=message.replace('\\n','\n')
     cleaned_message = message
 
     now = datetime.now()
@@ -1158,7 +1158,7 @@ if __name__ == "__main__":
         "--send-message",
         nargs=3,
         metavar=("USERNAME", "PASSWORD", "MESSAGE"),
-        help="Designated user's identity to send information",
+        help="Send message as the specified user",
     )
     # 新增发送代码CLI参数
     parser.add_argument(
@@ -1166,7 +1166,7 @@ if __name__ == "__main__":
         "--send-code",
         nargs=3,
         metavar=("USERNAME", "PASSWORD", "CODE"),
-        help="Designated user's identity to send code",
+        help="Send code as specified user (\\n indicates line break)",
     )
     parser.add_argument(
         "-bi",
@@ -1179,6 +1179,35 @@ if __name__ == "__main__":
         "--unban-ip",
         metavar="IP",
         help="Unban an IP address"
+    )
+    # 新增：列出所有用户
+    parser.add_argument(
+        "-lu",
+        "--list-users",
+        action="store_true",
+        help="List all registered users"
+    )
+    # 新增：列出所有管理员
+    parser.add_argument(
+        "-la",
+        "--list-admins",
+        action="store_true",
+        help="List all admin users"
+    )
+    # 新增：列出所有被封禁IP
+    parser.add_argument(
+        "-lbi",
+        "--list-banned-ips",
+        action="store_true",
+        help="List all banned IP addresses"
+    )
+    # 新增：修改用户密码
+    parser.add_argument(
+        "-cp",
+        "--change-password",
+        nargs=2,
+        metavar=("USERNAME", "NEWPASSWORD"),
+        help="Change password for a user"
     )
     args = parser.parse_args()
     # 注册用户CLI逻辑
@@ -1196,6 +1225,35 @@ if __name__ == "__main__":
         else:
             register_admin(username, password)
             print(f"Admin {username} successfully registered")
+        exit(0)
+    # 新增：列出所有用户
+    if args.list_users:
+        # print("All users:")
+        for u in users:
+            print(u)
+        exit(0)
+    # 新增：列出所有管理员
+    if args.list_admins:
+        # print("All admins:")
+        for a in admin_list:
+            print(a)
+        exit(0)
+    # 新增：列出所有被封禁IP
+    if args.list_banned_ips:
+        # print("Banned IPs:")
+        for ip in BANNED_IP:
+            print(ip)
+        exit(0)
+    # 新增：修改用户密码
+    if args.change_password:
+        username, newpassword = args.change_password
+        if username in users:
+            hashed_password = hashlib.sha256(newpassword.encode()).hexdigest()
+            users[username] = hashed_password
+            save_users()
+            print(f"Password for user {username} changed successfully")
+        else:
+            print(f"User {username} does not exist")
         exit(0)
     if args.send_message:
         username, password, message = args.send_message
