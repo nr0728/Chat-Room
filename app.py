@@ -15,6 +15,8 @@ import base64
 import user_agents
 import threading
 import argparse  # 新增
+import fnmatch
+
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -41,8 +43,9 @@ loginkeys = {}
 PRIVATE_MSG_FILE = "private_messages.json"
 private_messages_lock = threading.Lock()
 
-# 封禁的 IP 列表
-BANNED_IP = ["211.158.25.248", "122.224.219.246"]
+# 封禁的 IP 列表文件路径
+BANNED_IP_FILE = "banned_ip.json"
+BANNED_IP = []
 
 # 管理员列表文件路径
 ADMIN_LIST_FILE = "admin.json"
@@ -111,6 +114,15 @@ def load_admin_list():
         admin_list = []
 
 
+def load_banned_ip():
+    global BANNED_IP
+    try:
+        with open(BANNED_IP_FILE, "r") as file:
+            BANNED_IP = json.load(file)
+    except FileNotFoundError:
+        BANNED_IP = []
+
+
 def save_users():
     with open(USER_DATA_FILE, "w") as file:
         json.dump(users, file)
@@ -130,6 +142,11 @@ def save_loginkeys():
 def save_admin_list():
     with open(ADMIN_LIST_FILE, "w") as file:
         json.dump(admin_list, file)
+
+
+def save_banned_ip():
+    with open(BANNED_IP_FILE, "w") as file:
+        json.dump(BANNED_IP, file)
 
 
 characters = "wertyupadfghjkxcvbnm34578"
@@ -312,7 +329,7 @@ def send_message():
         user_ip = user_ip.split(",")[0].strip()
     except:
         pass
-    if user_ip in BANNED_IP:
+    if ip_is_banned(user_ip):
         return jsonify(
             {"status": "FAIL", "message": "IP 已封禁，请联系 monkey@llong.tech"}
         )
@@ -467,7 +484,7 @@ def send_code():
         user_ip = user_ip.split(",")[0].strip()
     except:
         pass
-    if user_ip in BANNED_IP:
+    if ip_is_banned(user_ip):
         return jsonify(
             {"status": "FAIL", "message": "IP 已封禁，请联系 monkey@llong.tech"}
         )
@@ -514,6 +531,74 @@ def send_code():
 
     return jsonify({"status": "OK"})
 
+
+def send_code_cli(username, message):
+
+    if username not in users:
+        return {"status": "FAIL", "message": "The user attempting to send the message does not exist"}
+
+    cleaned_message = message
+
+    now = datetime.now()
+    timestamp = f"发送时间：{now.strftime('%Y-%m-%d %H:%M:%S')}.{now.strftime('%f')[:3]}.{now.strftime('%f')[3:]}"
+
+    user_ip = '127.0.0.1'
+    # user_ip = request.remote_addr
+    # print(user_ip)
+    try:
+        user_ip = user_ip.split(",")[0].strip()
+    except:
+        pass
+    # if user_ip in BANNED_IP:
+    # return {"status": "FAIL", "message": "IP 已封禁，请联系 monkey@llong.tech"}
+    try:
+        response = requests.get(f"https://ipinfo.io/{user_ip}/json")
+        location_data = response.json()
+        city = location_data.get("city", "Unknown City")
+        region = location_data.get("region", "Unknown Region")
+        country = (
+            location_data.get("country", "Unknown Country")
+            .replace("HK", "CN")
+            .replace("TW", "CN")
+            .replace("MO", "CN")
+        )
+    except requests.RequestException:
+        city = "Unknown City"
+        region = "Unknown Region"
+        country = "Unknown Country"
+
+    if username in admin_list:
+        # print("admin sending message")
+        timestamp += f"<br>用户已启用隐藏 IP 服务"
+    else:
+        timestamp += f"<br>用户 IP：{user_ip}, {city}, {region}, {country}"
+    if username in admin_list:
+        username = (
+            '<strong><font color="#e74c3c" size="4">'
+            + username
+            + ' </font> <button style="border-radius:25px;background-color:#e74c3c;" class="admin"><font color="white" size="2">管理员</font></button></strong>'
+        )
+    cleaned_message = cleaned_message.replace("<", "&lt;")
+    cleaned_message = cleaned_message.replace(">", "&gt;")
+    cleaned_message = (
+        '用户发送了<font color="red">代码</font>：<br><pre class="language-cpp"><code class="language-cpp">'
+        + cleaned_message
+        + "</code></pre>"
+    )
+    chat_history.append(
+        {"timestamp": timestamp, "username": username, "message": cleaned_message}
+    )
+
+    with open(CHAT_HISTORY_FILE, "w") as file:
+        json.dump(chat_history, file)
+
+    # 使用SocketIO广播消息
+    # socketio.emit(
+    #     "new_message",
+    #     {"timestamp": timestamp, "username": username, "message": cleaned_message},
+    # )
+
+    return {"status": "OK"}
 
 @app.route("/get_chat_history")
 def get_chat_history():
@@ -1030,12 +1115,21 @@ def chat():
     return render_template("chat.html")
 
 
+def ip_is_banned(ip):
+    """判断IP是否被封禁，支持*通配符"""
+    for banned in BANNED_IP:
+        if fnmatch.fnmatch(ip, banned):
+            return True
+    return False
+
+
 if __name__ == "__main__":
     load_history()
     load_users()
     load_2fa_keys()
     load_loginkeys()
-    load_admin_list()  # 加载管理员列表
+    load_admin_list()
+    load_banned_ip()
     parser = argparse.ArgumentParser(description="Chat Room Server CLI")
     parser.add_argument(
         "-p",
@@ -1066,6 +1160,26 @@ if __name__ == "__main__":
         metavar=("USERNAME", "PASSWORD", "MESSAGE"),
         help="Designated user's identity to send information",
     )
+    # 新增发送代码CLI参数
+    parser.add_argument(
+        "-sc",
+        "--send-code",
+        nargs=3,
+        metavar=("USERNAME", "PASSWORD", "CODE"),
+        help="Designated user's identity to send code",
+    )
+    parser.add_argument(
+        "-bi",
+        "--ban-ip",
+        metavar="IP",
+        help="Ban an IP address"
+    )
+    parser.add_argument(
+        "-ui",
+        "--unban-ip",
+        metavar="IP",
+        help="Unban an IP address"
+    )
     args = parser.parse_args()
     # 注册用户CLI逻辑
     if args.register_user:
@@ -1094,6 +1208,36 @@ if __name__ == "__main__":
         else:
             print(f"User {username} does not exist")
         exit(0)
+    # 新增发送代码CLI逻辑
+    if args.send_code:
+        username, password, code = args.send_code
+        if username in users:
+            if login_test(username, password):
+                send_code_cli(username, code)
+                print(f"{username} sent code: {code}")
+            else:
+                print(f"{username} failed to send code: {code}")
+        else:
+            print(f"User {username} does not exist")
+        exit(0)
+    if args.ban_ip:
+        ip = args.ban_ip
+        if ip not in BANNED_IP:
+            BANNED_IP.append(ip)
+            save_banned_ip()
+            print(f"IP {ip} has been banned.")
+        else:
+            print(f"IP {ip} is already banned.")
+        exit(0)
+    if args.unban_ip:
+        ip = args.unban_ip
+        if ip in BANNED_IP:
+            BANNED_IP.remove(ip)
+            save_banned_ip()
+            print(f"IP {ip} has been unbanned.")
+        else:
+            print(f"IP {ip} is not in the banned list.")
+        exit(0)
     for admin in admin_list:
         if admin not in users:
             prompt = f"The administrator account '{admin}' is not currently registered. Please enter the password for this user to proceed with automatic registration. To skip this step, simply press Enter: "
@@ -1109,3 +1253,4 @@ else:
     load_2fa_keys()
     load_loginkeys()
     load_admin_list()
+    load_banned_ip()
