@@ -1144,22 +1144,24 @@
 
             let emojiHtml = '';
             emojis.forEach(emoji => {
-                emojiHtml += `<button class="emoji-button" onclick="addEmojiToInput('${emoji}')">${emoji}</button>`;
+                const code = Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join('-');
+                emojiHtml += `<button class="emoji-button" onclick="addEmojiToInputImg('${code}')"><img src="/static/emoji/${code}.png" alt="${emoji}" style="width:1.5em;height:1.5em;vertical-align:middle;"></button>`;
             });
 
             Swal.fire({
                 title: '选择一个 Emoji',
-                html: `<div style="display: flex; flex-wrap: wrap; gap: 8.4px;">${emojiHtml}</div>`,
+                html: `<div style="display: flex; flex-wrap: wrap; gap: 5px;">${emojiHtml}</div>`,
                 showConfirmButton: false,
                 showCancelButton: true,
                 cancelButtonText: '关闭',
             });
         }
 
-        function addEmojiToInput(emoji) {
+        function addEmojiToInputImg(code) {
             const input = document.getElementById('message-input');
-            input.value += emoji;
-            Swal.close(); // 关闭 Emoji 选择器
+            const imgTag = `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;">`;
+            input.value += imgTag;
+            Swal.close();
         }
         function openEmojiPickerCode() {
             const emojis = [
