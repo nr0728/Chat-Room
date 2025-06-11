@@ -1217,6 +1217,7 @@ if __name__ == "__main__":
         else:
             register_user(username, password)
             print(f"User {username} successfully registered")
+        exit(0)
     if args.register_admin:
         username, password = args.register_admin
         if username in users:

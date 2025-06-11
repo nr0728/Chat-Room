@@ -694,45 +694,20 @@
             document.getElementById('login-form').style.display = 'none';
         }
 
-        function updateChatHistory() {
-            fetch('/get_chat_history')
-                .then(response => response.json())
-                .then(data => {
-                    const chatHistoryDiv = document.getElementById('chat-history');
-                    chatHistoryDiv.innerHTML = '';
-                    data.reverse().forEach(entry => {
-                        appendMessageToChatHistory(entry.timestamp, entry.username, entry.message);
-                    });
-                    /*Prism.highlightAll();*/
-                });
-        }
-
-        let currentUsername = null;
-        fetch('user_status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: ``
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'OK') {
-                    currentUsername = data.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
-                    document.getElementById('register-button').innerText = "您已登录";
-                    document.getElementById('login-button').innerText = "登出";
-                    showNotification('您正以 ' + data.message + ' 的身份聊天。', 'ok');
-                    usingUsername = data.message;
-                    updateChatHistory();
-                } else {
-                    showNotification('系统消息：登录后才可发送消息。', 'fail');
-                }
+        // 解析消息内容，将 [xxxx] 替换为 img 标签
+        function parseEmojiInMessage(msg) {
+            return msg.replace(/\[([0-9a-fA-F\-]+)\]/g, function(match, code) {
+                return `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;">`;
             });
+        }
 
         function appendMessageToChatHistory(timestamp, username, message) {
             const chatHistoryDiv = document.getElementById('chat-history');
             const hr = document.createElement('hr');
             chatHistoryDiv.appendChild(hr);
             const p = document.createElement('p');
-            p.innerHTML = `用户 ${username} 说道：${message}`;
+            // 解析 emoji 代码为 img 标签
+            p.innerHTML = `用户 ${username} 说道：${parseEmojiInMessage(message)}`;
             let rawUsername = username.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
             if (
                 currentUsername &&
@@ -786,10 +761,45 @@
             appendMessageToChatHistory(data.timestamp, data.username, data.message);
         }
 
+        function updateChatHistory() {
+            fetch('/get_chat_history')
+                .then(response => response.json())
+                .then(data => {
+                    const chatHistoryDiv = document.getElementById('chat-history');
+                    chatHistoryDiv.innerHTML = '';
+                    data.reverse().forEach(entry => {
+                        // 解析 emoji 代码
+                        appendMessageToChatHistory(entry.timestamp, entry.username, entry.message);
+                    });
+                    /*Prism.highlightAll();*/
+                });
+        }
+
+        let currentUsername = null;
+        fetch('user_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: ``
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    currentUsername = data.message.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
+                    document.getElementById('register-button').innerText = "您已登录";
+                    document.getElementById('login-button').innerText = "登出";
+                    showNotification('您正以 ' + data.message + ' 的身份聊天。', 'ok');
+                    usingUsername = data.message;
+                    updateChatHistory();
+                } else {
+                    showNotification('系统消息：登录后才可发送消息。', 'fail');
+                }
+            });
+
         function sendMessage() {
             const messageInput = document.getElementById('message-input');
-            const message = messageInput.value.trim();
+            let message = messageInput.value.trim();
 
+            // 发送前无需处理，直接发送，后端存储 [xxxx] 形式
             if (message !== '') {
                 fetch('/send_message', {
                     method: 'POST',
@@ -1163,11 +1173,10 @@
             });
         }
 
-        // 插入 emoji 图片
+        // 插入 emoji 代码（不再插入 img 标签，插入 [code] 形式）
         function addEmojiToInputImg(code) {
             const input = document.getElementById('message-input');
-            const imgTag = `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;">`;
-            input.value += imgTag;
+            input.value += `[${code}]`;
             Swal.close();
         }
         function openEmojiPickerCode() {
