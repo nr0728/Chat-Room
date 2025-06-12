@@ -693,6 +693,7 @@
                     const chatHistoryDiv = document.getElementById('chat-history');
                     chatHistoryDiv.innerHTML = '';
                     data.reverse().forEach(entry => {
+                        // entry.message 可能包含 [xxxx]，需替换为img
                         appendMessageToChatHistory(entry.timestamp, entry.username, entry.message);
                     });
                     /*Prism.highlightAll();*/
@@ -723,7 +724,9 @@
             const hr = document.createElement('hr');
             chatHistoryDiv.appendChild(hr);
             const p = document.createElement('p');
-            p.innerHTML = `用户 ${username} 说道：${message}`;
+            // 替换emoji code为img
+            const msgWithEmoji = replaceEmojiCodeWithImg(message);
+            p.innerHTML = `用户 ${username} 说道：${msgWithEmoji}`;
             let rawUsername = username.replace(/<[^>]+>/g, "").replace(/管理员/g, "").trim();
             if (
                 currentUsername &&
@@ -782,9 +785,11 @@
 
         function sendMessage() {
             const messageInput = document.getElementById('message-input');
-            const message = messageInput.value.trim();
+            let message = messageInput.value.trim();
 
             if (message !== '') {
+                // 发送前将所有emoji img转为[code]
+                message = message.replace(/<img[^>]+src="\/static\/emoji\/([0-9a-fA-F\-]+)\.png"[^>]*>/g, '[$1]');
                 fetch('/send_message', {
                     method: 'POST',
                     headers: {
@@ -1145,7 +1150,7 @@
             let emojiHtml = '';
             emojis.forEach(emoji => {
                 const code = Array.from(emoji).map(c => c.codePointAt(0).toString(16)).join('-');
-                emojiHtml += `<button class="emoji-button" onclick="addEmojiToInputImg('${code}')"><img src="/static/emoji/${code}.png" alt="${emoji}" style="width:1.5em;height:1.5em;vertical-align:middle;"></button>`;
+                emojiHtml += `<button class="emoji-button" onclick="addEmojiToInputCode('${code}')"><img src="/static/emoji/${code}.png" alt="${emoji}" style="width:1.5em;height:1.5em;vertical-align:middle;"></button>`;
             });
 
             Swal.fire({
@@ -1157,39 +1162,18 @@
             });
         }
 
-        function addEmojiToInputImg(code) {
+        // 插入 [code] 而不是 img
+        function addEmojiToInputCode(code) {
             const input = document.getElementById('message-input');
-            const imgTag = `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;">`;
-            input.value += imgTag;
+            input.value += `[${code}]`;
             Swal.close();
         }
-        function openEmojiPickerCode() {
-            const emojis = [
-                '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '🙂', '🤗', '🤔',
-                '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '🤤', '😒', '😓',
-                '😔', '😕', '🙃', '🤑', '😲', '☹️', '🙁', '😖', '😞', '😟', '😤', '😢', '😭', '😦'
-            ];
-
-            let emojiHtml = '';
-            emojis.forEach(emoji => {
-                emojiHtml += `<button class="emoji-button" onclick="addEmojiToCode('${emoji}')">${emoji}</button>`;
-            });
-
-            Swal.fire({
-                title: '选择一个 Emoji',
-                html: `<div style="display: flex; flex-wrap: wrap; gap: 8.4px;">${emojiHtml}</div>`,
-                showConfirmButton: false,
-                showCancelButton: true,
-                cancelButtonText: '关闭',
+        // 将 [xxxx] 替换为 img 标签
+        function replaceEmojiCodeWithImg(text) {
+            return text.replace(/\[([0-9a-fA-F\-]+)\]/g, function(match, code) {
+                return `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;">`;
             });
         }
-
-        function addEmojiToCode(emoji) {
-            const input = document.getElementById('message-input-code');
-            input.value += emoji;
-            Swal.close(); // 关闭 Emoji 选择器
-        }
-
         // SocketIO 私聊房间加入
         function joinPrivateRoom(username) {
             if (window.socket && username) {
