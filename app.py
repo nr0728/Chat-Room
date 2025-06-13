@@ -1113,6 +1113,34 @@ def get_private_contacts():
 def chat():
     return render_template("chat.html")
 
+@app.route("/recall_private_message", methods=["POST"])
+def recall_private_message():
+    if "username" not in session:
+        return jsonify({"status": "FAIL", "message": "需要登录"})
+    username = session["username"]
+    timestamp = request.form.get("timestamp")
+    with_user = request.form.get("with_user")
+    if not timestamp or not with_user:
+        return jsonify({"status": "FAIL", "message": "参数缺失"})
+    with private_messages_lock:
+        data = load_private_messages()
+        key = get_private_key(username, with_user)
+        msgs = data.get(key, [])
+        idx = None
+        for i, msg in enumerate(msgs):
+            if msg["timestamp"] == timestamp and msg["from"] == username:
+                idx = i
+                break
+        if idx is not None:
+            del msgs[idx]
+            data[key] = msgs
+            save_private_messages(data)
+            # 通知双方刷新
+            for user in [username, with_user]:
+                socketio.emit("private_message", {"action": "recall", "timestamp": timestamp}, room=f"user_{user}")
+            return jsonify({"status": "OK"})
+        else:
+            return jsonify({"status": "FAIL", "message": "只能撤回自己发送的消息"})
 
 def ip_is_banned(ip):
     """判断IP是否被封禁，支持*通配符"""
