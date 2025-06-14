@@ -1,3 +1,6 @@
+import eventlet
+
+eventlet.monkey_patch()
 from flask import Flask, render_template, request, jsonify, session, send_file
 import requests
 import json
