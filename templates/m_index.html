@@ -696,8 +696,8 @@
 
         // 解析消息内容，将 [xxxx] 替换为 img 标签
         function parseEmojiInMessage(msg) {
-            return msg.replace(/\[([0-9a-fA-F\-]+)\]/g, function(match, code) {
-                return `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;">`;
+            return msg.replace(/\[([0-9a-fA-F\-]+)\]/g, function (match, code) {
+                return `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;" onerror="this.outerHTML='[${code}]'">`;
             });
         }
 
@@ -1225,7 +1225,7 @@
 
         // 私聊面板：选择用户、显示历史、发送消息
         function openPrivateChatPanel() {
-            location.href='/chat'
+            location.href = '/chat'
         }
 
         function showPrivatePanelV2(contacts, allUsers, myName) {

@@ -6,3 +6,4 @@ requests
 pyotp
 qrcode
 user_agents
+eventlet

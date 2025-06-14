@@ -1,3 +1,6 @@
+import eventlet
+
+eventlet.monkey_patch()
 from flask import Flask, render_template, request, jsonify, session, send_file
 import requests
 import json
@@ -534,14 +537,17 @@ def send_code():
 def send_code_cli(username, message):
 
     if username not in users:
-        return {"status": "FAIL", "message": "The user attempting to send the message does not exist"}
-    message=message.replace('\\n','\n')
+        return {
+            "status": "FAIL",
+            "message": "The user attempting to send the message does not exist",
+        }
+    message = message.replace("\\n", "\n")
     cleaned_message = message
 
     now = datetime.now()
     timestamp = f"发送时间：{now.strftime('%Y-%m-%d %H:%M:%S')}.{now.strftime('%f')[:3]}.{now.strftime('%f')[3:]}"
 
-    user_ip = '127.0.0.1'
+    user_ip = "127.0.0.1"
     # user_ip = request.remote_addr
     # print(user_ip)
     try:
@@ -598,6 +604,7 @@ def send_code_cli(username, message):
     # )
 
     return {"status": "OK"}
+
 
 @app.route("/get_chat_history")
 def get_chat_history():
@@ -1114,6 +1121,40 @@ def chat():
     return render_template("chat.html")
 
 
+@app.route("/recall_private_message", methods=["POST"])
+def recall_private_message():
+    if "username" not in session:
+        return jsonify({"status": "FAIL", "message": "需要登录"})
+    username = session["username"]
+    timestamp = request.form.get("timestamp")
+    with_user = request.form.get("with_user")
+    if not timestamp or not with_user:
+        return jsonify({"status": "FAIL", "message": "参数缺失"})
+    with private_messages_lock:
+        data = load_private_messages()
+        key = get_private_key(username, with_user)
+        msgs = data.get(key, [])
+        idx = None
+        for i, msg in enumerate(msgs):
+            if msg["timestamp"] == timestamp and msg["from"] == username:
+                idx = i
+                break
+        if idx is not None:
+            del msgs[idx]
+            data[key] = msgs
+            save_private_messages(data)
+            # 通知双方刷新
+            for user in [username, with_user]:
+                socketio.emit(
+                    "private_message",
+                    {"action": "recall", "timestamp": timestamp},
+                    room=f"user_{user}",
+                )
+            return jsonify({"status": "OK"})
+        else:
+            return jsonify({"status": "FAIL", "message": "只能撤回自己发送的消息"})
+
+
 def ip_is_banned(ip):
     """判断IP是否被封禁，支持*通配符"""
     for banned in BANNED_IP:
@@ -1167,38 +1208,22 @@ if __name__ == "__main__":
         metavar=("USERNAME", "PASSWORD", "CODE"),
         help="Send code as specified user (\\n indicates line break)",
     )
-    parser.add_argument(
-        "-bi",
-        "--ban-ip",
-        metavar="IP",
-        help="Ban an IP address"
-    )
-    parser.add_argument(
-        "-ui",
-        "--unban-ip",
-        metavar="IP",
-        help="Unban an IP address"
-    )
+    parser.add_argument("-bi", "--ban-ip", metavar="IP", help="Ban an IP address")
+    parser.add_argument("-ui", "--unban-ip", metavar="IP", help="Unban an IP address")
     # 新增：列出所有用户
     parser.add_argument(
-        "-lu",
-        "--list-users",
-        action="store_true",
-        help="List all registered users"
+        "-lu", "--list-users", action="store_true", help="List all registered users"
     )
     # 新增：列出所有管理员
     parser.add_argument(
-        "-la",
-        "--list-admins",
-        action="store_true",
-        help="List all admin users"
+        "-la", "--list-admins", action="store_true", help="List all admin users"
     )
     # 新增：列出所有被封禁IP
     parser.add_argument(
         "-lbi",
         "--list-banned-ips",
         action="store_true",
-        help="List all banned IP addresses"
+        help="List all banned IP addresses",
     )
     # 新增：修改用户密码
     parser.add_argument(
@@ -1206,7 +1231,7 @@ if __name__ == "__main__":
         "--change-password",
         nargs=2,
         metavar=("USERNAME", "NEWPASSWORD"),
-        help="Change password for a user"
+        help="Change password for a user",
     )
     args = parser.parse_args()
     # 注册用户CLI逻辑

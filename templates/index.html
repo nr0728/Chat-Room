@@ -1170,8 +1170,8 @@
         }
         // 将 [xxxx] 替换为 img 标签
         function replaceEmojiCodeWithImg(text) {
-            return text.replace(/\[([0-9a-fA-F\-]+)\]/g, function(match, code) {
-                return `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;">`;
+            return text.replace(/\[([0-9a-fA-F\-]+)\]/g, function (match, code) {
+                return `<img src="/static/emoji/${code}.png" alt="emoji" style="width:1.5em;height:1.5em;vertical-align:middle;" onerror="this.outerHTML='[${code}]'">`;
             });
         }
         // SocketIO 私聊房间加入
@@ -1298,7 +1298,7 @@
 
         // 私聊面板：左侧为历史用户列表和添加用户按钮，右侧为聊天详情和发送框
         function openPrivateChatPanel() {
-            location.href='/chat';
+            location.href = '/chat';
         }
 
         function showPrivatePanelV2(contacts, allUsers, myName) {
